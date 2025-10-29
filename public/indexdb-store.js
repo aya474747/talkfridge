@@ -5,10 +5,11 @@
 
 // IndexedDBの設定
 const DB_NAME = 'TalkFridgeDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;  // ユーザー辞書追加でバージョンアップ
 const STORE_INGREDIENTS = 'ingredients';
 const STORE_RECIPE_HISTORY = 'recipeHistory';
 const STORE_USAGE_HISTORY = 'usageHistory';
+const STORE_FOOD_DICT = 'foodDictionary';  // ユーザー追加の食材辞書
 
 let db = null;
 
@@ -42,6 +43,13 @@ function initDB() {
             if (!db.objectStoreNames.contains(STORE_USAGE_HISTORY)) {
                 db.createObjectStore(STORE_USAGE_HISTORY, { keyPath: 'id', autoIncrement: true });
             }
+            
+            // ユーザー辞書テーブル（食材名とカテゴリのマッピング）
+            if (!db.objectStoreNames.contains(STORE_FOOD_DICT)) {
+                const dictStore = db.createObjectStore(STORE_FOOD_DICT, { keyPath: 'id', autoIncrement: true });
+                dictStore.createIndex('name', 'name', { unique: true });  // 食材名は重複不可
+                dictStore.createIndex('category', 'category', { unique: false });
+            }
         };
     });
 }
@@ -63,41 +71,84 @@ async function getIngredients() {
     });
 }
 
-// 食材を追加
+// 食材を追加（既存の食材がある場合は数量を増やす）
 async function addIngredient(ingredient) {
     if (!db) await initDB();
     
+    const now = new Date().toISOString();
+    const data = {
+        name: ingredient.name,
+        quantity: ingredient.quantity || 1,
+        unit: ingredient.unit || '個',
+        category: ingredient.category || 'その他',
+        expiry_date: ingredient.expiry_date || null,
+        notes: ingredient.notes || null,
+        created_at: now,
+        updated_at: now
+    };
+    
+    // 既存の食材を検索（名前・単位・カテゴリが一致するもの）
     return new Promise((resolve, reject) => {
         const transaction = db.transaction([STORE_INGREDIENTS], 'readwrite');
         const store = transaction.objectStore(STORE_INGREDIENTS);
-        
-        const now = new Date().toISOString();
-        const data = {
-            name: ingredient.name,
-            quantity: ingredient.quantity || 1,
-            unit: ingredient.unit || '個',
-            category: ingredient.category || 'その他',
-            expiry_date: ingredient.expiry_date || null,
-            notes: ingredient.notes || null,
-            created_at: now,
-            updated_at: now
-        };
-        
-        const request = store.add(data);
+        const request = store.getAll();
         
         request.onsuccess = async () => {
-            // 使用履歴に記録（エラーが発生しても続行）
-            try {
-                await addUsageHistory(data.name, 'add', data.quantity);
-            } catch (historyError) {
-                console.warn('使用履歴の記録でエラー:', historyError);
-                // 履歴の記録に失敗しても、食材追加は成功とする
+            const existingIngredients = request.result.filter(ing => 
+                ing.name === data.name && 
+                ing.unit === data.unit && 
+                ing.category === data.category &&
+                ing.quantity > 0  // 数量が0以上（使用済みでない）
+            );
+            
+            if (existingIngredients.length > 0) {
+                // 既存の食材が見つかった場合：数量を増やす
+                const existing = existingIngredients[0];  // 最初に見つかった食材を使用
+                const newQuantity = existing.quantity + data.quantity;
+                
+                console.log(`📝 既存食材を発見: ${existing.name} (現在: ${existing.quantity}${existing.unit})`);
+                console.log(`➕ 数量を追加: ${data.quantity}${data.unit} → 合計: ${newQuantity}${data.unit}`);
+                
+                // 数量を更新
+                const updateResult = await updateIngredient(existing.id, { 
+                    quantity: newQuantity 
+                });
+                
+                if (updateResult.success) {
+                    // 使用履歴に記録
+                    try {
+                        await addUsageHistory(data.name, 'add', data.quantity);
+                    } catch (historyError) {
+                        console.warn('使用履歴の記録でエラー:', historyError);
+                    }
+                    console.log(`✅ 既存食材の数量を更新: ${existing.name} ${newQuantity}${existing.unit}`);
+                    resolve({ success: true, merged: true, existingId: existing.id });
+                } else {
+                    reject(new Error('既存食材の数量更新に失敗しました'));
+                }
+            } else {
+                // 既存の食材がない場合：新しい食材として追加
+                const addRequest = store.add(data);
+                
+                addRequest.onsuccess = async () => {
+                    // 使用履歴に記録（エラーが発生しても続行）
+                    try {
+                        await addUsageHistory(data.name, 'add', data.quantity);
+                    } catch (historyError) {
+                        console.warn('使用履歴の記録でエラー:', historyError);
+                    }
+                    console.log('✅ 新しい食材を追加:', data.name, data.quantity, data.unit);
+                    resolve({ success: true, merged: false });
+                };
+                addRequest.onerror = () => {
+                    console.error('❌ 食材追加エラー:', addRequest.error);
+                    reject(addRequest.error);
+                };
             }
-            console.log('✅ 食材を追加:', data.name, data.quantity, data.unit);
-            resolve({ success: true });
         };
+        
         request.onerror = () => {
-            console.error('❌ 食材追加エラー:', request.error);
+            console.error('❌ 食材検索エラー:', request.error);
             reject(request.error);
         };
     });
@@ -131,9 +182,15 @@ async function addIngredients(ingredients) {
         }
         
         try {
-            console.log(`📝 [${i + 1}/${ingredients.length}] 追加中: ${ing.name} ${ing.quantity}${ing.unit}`);
+            console.log(`📝 [${i + 1}/${ingredients.length}] 処理中: ${ing.name} ${ing.quantity}${ing.unit}`);
             const result = await addIngredient(ing);
-            console.log(`✅ [${i + 1}/${ingredients.length}] 追加成功: ${ing.name}`);
+            
+            if (result.merged) {
+                console.log(`🔄 [${i + 1}/${ingredients.length}] 既存食材に統合: ${ing.name}`);
+            } else {
+                console.log(`✅ [${i + 1}/${ingredients.length}] 新規食材を追加: ${ing.name}`);
+            }
+            
             results.push({ success: true, ingredient: ing, result });
         } catch (error) {
             console.error(`❌ [${i + 1}/${ingredients.length}] 追加失敗:`, ing.name, error);
@@ -303,6 +360,102 @@ async function getUsageHistory() {
     return new Promise((resolve, reject) => {
         const transaction = db.transaction([STORE_USAGE_HISTORY], 'readonly');
         const store = transaction.objectStore(STORE_USAGE_HISTORY);
+        const request = store.getAll();
+        
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// ========== ユーザー辞書機能 ==========
+
+// ユーザー辞書に食材を追加
+async function addFoodToDictionary(name, category) {
+    if (!db) await initDB();
+    
+    if (!name || !category) {
+        return { success: false, error: '食材名とカテゴリを入力してください' };
+    }
+    
+    return new Promise((resolve) => {
+        const transaction = db.transaction([STORE_FOOD_DICT], 'readwrite');
+        const store = transaction.objectStore(STORE_FOOD_DICT);
+        
+        // 既存の名前をチェック（重複防止）
+        const index = store.index('name');
+        const checkRequest = index.get(name);
+        
+        checkRequest.onsuccess = () => {
+            if (checkRequest.result) {
+                // 既に存在する場合は更新
+                const existing = checkRequest.result;
+                existing.category = category;
+                const updateRequest = store.put(existing);
+                updateRequest.onsuccess = () => resolve({ success: true, message: '辞書を更新しました' });
+                updateRequest.onerror = () => resolve({ success: false, error: '更新に失敗しました' });
+            } else {
+                // 新規追加
+                const newEntry = { name: name, category: category };
+                const addRequest = store.add(newEntry);
+                addRequest.onsuccess = () => resolve({ success: true, message: '辞書に追加しました' });
+                addRequest.onerror = () => resolve({ success: false, error: '追加に失敗しました' });
+            }
+        };
+        checkRequest.onerror = () => resolve({ success: false, error: 'チェックに失敗しました' });
+    });
+}
+
+// ユーザー辞書から食材を削除
+async function removeFoodFromDictionary(name) {
+    if (!db) await initDB();
+    
+    return new Promise((resolve) => {
+        const transaction = db.transaction([STORE_FOOD_DICT], 'readwrite');
+        const store = transaction.objectStore(STORE_FOOD_DICT);
+        const index = store.index('name');
+        const request = index.get(name);
+        
+        request.onsuccess = () => {
+            if (request.result) {
+                const deleteRequest = store.delete(request.result.id);
+                deleteRequest.onsuccess = () => resolve({ success: true, message: '辞書から削除しました' });
+                deleteRequest.onerror = () => resolve({ success: false, error: '削除に失敗しました' });
+            } else {
+                resolve({ success: false, error: '見つかりませんでした' });
+            }
+        };
+        request.onerror = () => resolve({ success: false, error: '検索に失敗しました' });
+    });
+}
+
+// ユーザー辞書から食材名で検索（カテゴリ取得）
+async function getFoodCategoryFromDictionary(name) {
+    if (!db) await initDB();
+    
+    return new Promise((resolve) => {
+        const transaction = db.transaction([STORE_FOOD_DICT], 'readonly');
+        const store = transaction.objectStore(STORE_FOOD_DICT);
+        const index = store.index('name');
+        const request = index.get(name);
+        
+        request.onsuccess = () => {
+            if (request.result) {
+                resolve({ success: true, category: request.result.category });
+            } else {
+                resolve({ success: false });
+            }
+        };
+        request.onerror = () => resolve({ success: false });
+    });
+}
+
+// ユーザー辞書の全件取得
+async function getAllFoodDictionary() {
+    if (!db) await initDB();
+    
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STORE_FOOD_DICT], 'readonly');
+        const store = transaction.objectStore(STORE_FOOD_DICT);
         const request = store.getAll();
         
         request.onsuccess = () => resolve(request.result);

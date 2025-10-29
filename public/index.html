@@ -389,14 +389,26 @@
                         console.log('💾 成功数:', addResult.added, '失敗数:', addResult.failed);
                         
                         if (addResult.success) {
-                            const successNames = addResult.results
-                                .filter(r => r.success)
-                                .map(r => `${r.ingredient.name} ${r.ingredient.quantity}${r.ingredient.unit}`)
-                                .join(', ');
+                            const successItems = addResult.results.filter(r => r.success);
+                            const mergedItems = successItems.filter(r => r.result && r.result.merged);
+                            const newItems = successItems.filter(r => !r.result || !r.result.merged);
                             
-                            let message = `✅ 食材を追加しました！\n\n${successNames}`;
+                            let message = '✅ 食材を処理しました！\n\n';
+                            
+                            if (mergedItems.length > 0) {
+                                message += '🔄 既存食材に数量を追加：\n';
+                                message += mergedItems.map(r => `  • ${r.ingredient.name} +${r.ingredient.quantity}${r.ingredient.unit}`).join('\n');
+                                message += '\n\n';
+                            }
+                            
+                            if (newItems.length > 0) {
+                                message += '➕ 新規食材を追加：\n';
+                                message += newItems.map(r => `  • ${r.ingredient.name} ${r.ingredient.quantity}${r.ingredient.unit}`).join('\n');
+                                message += '\n\n';
+                            }
+                            
                             if (addResult.failed > 0) {
-                                message += `\n\n⚠️ ${addResult.failed}個の食材の追加に失敗しました`;
+                                message += `⚠️ ${addResult.failed}個の食材の処理に失敗しました`;
                             }
                             
                             alert(message);
