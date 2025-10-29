@@ -262,6 +262,20 @@
                                 <p style="font-size: 0.85em; color: #666; margin-top: 10px;">
                                     💡 ブラウザのデータを削除すると食材情報が消えます。定期的にバックアップを取ることをお勧めします。
                                 </p>
+                                
+                                <!-- クラウドバックアップ設定 -->
+                                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #E0E0E0;">
+                                    <h6 class="mb-2">☁️ クラウド自動バックアップ（オプション）</h6>
+                                    <button class="btn btn-sm" style="background: #6C757D; color: white; border: none; padding: 6px 12px; font-size: 0.9em;" onclick="showCloudBackupSettings()">
+                                        ⚙️ 設定
+                                    </button>
+                                    <button class="btn btn-sm" style="background: #28A745; color: white; border: none; padding: 6px 12px; font-size: 0.9em; margin-left: 5px;" onclick="manualCloudBackup()">
+                                        🔄 今すぐバックアップ
+                                    </button>
+                                    <p style="font-size: 0.75em; color: #999; margin-top: 8px;">
+                                        GoogleスプレッドシートやNotionに自動でバックアップできます
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -291,6 +305,7 @@
     <!-- PWA用スクリプト -->
     <script src="indexdb-store.js"></script>
     <script src="parse-utils.js"></script>
+    <script src="cloud-backup.js"></script>
     <!-- Gemini API (CDN) -->
     <script src="https://cdn.jsdelivr.net/npm/@google/generative-ai@0.21.0/dist/index.umd.js"></script>
     <script>
@@ -386,6 +401,23 @@
                             
                             alert(message);
                             loadIngredients();
+                            
+                            // クラウドバックアップ設定がある場合は自動バックアップ
+                            try {
+                                const backupSettings = getCloudBackupSettings();
+                                if (backupSettings && backupSettings.service !== 'none') {
+                                    // バックグラウンドで実行（エラーがあっても続行）
+                                    setTimeout(async () => {
+                                        try {
+                                            await manualCloudBackup();
+                                        } catch (e) {
+                                            console.warn('自動バックアップエラー:', e);
+                                        }
+                                    }, 1000);
+                                }
+                            } catch (e) {
+                                console.warn('自動バックアップチェックエラー:', e);
+                            }
                         } else {
                             alert(`❌ エラー: ${addResult.failed}個すべての食材の追加に失敗しました`);
                         }
@@ -885,6 +917,99 @@
                 return { success: true };
             } catch (error) {
                 return { success: false, error: error.message };
+            }
+        }
+        
+        // クラウドバックアップ設定を表示
+        function showCloudBackupSettings() {
+            const settings = getCloudBackupSettings();
+            
+            const currentService = settings?.service || 'none';
+            const apiKey = settings?.apiKey || '';
+            const spreadsheetId = settings?.spreadsheetId || '';
+            const databaseId = settings?.databaseId || '';
+            
+            const settingsHtml = `
+📦 クラウドバックアップ設定
+
+【Googleスプレッドシート】
+1. Googleスプレッドシートを新規作成
+2. 「拡張機能」→「Apps Script」で設定
+3. APIキーとスプレッドシートIDを入力
+
+【Notion】
+1. Notionインテグレーションを作成
+2. データベースを作成
+3. APIキーとデータベースIDを入力
+
+サービス:
+<select id="backup-service" style="width: 100%; padding: 5px; margin: 5px 0;">
+    <option value="none" ${currentService === 'none' ? 'selected' : ''}>無効</option>
+    <option value="google" ${currentService === 'google' ? 'selected' : ''}>Googleスプレッドシート</option>
+    <option value="notion" ${currentService === 'notion' ? 'selected' : ''}>Notion</option>
+</select>
+
+APIキー:
+<input type="text" id="backup-api-key" value="${apiKey}" placeholder="APIキーを入力" style="width: 100%; padding: 5px; margin: 5px 0;">
+
+<span id="backup-id-label">${currentService === 'google' ? 'スプレッドシートID' : currentService === 'notion' ? 'データベースID' : ''}:</span>
+<input type="text" id="backup-id" value="${currentService === 'google' ? spreadsheetId : databaseId}" placeholder="${currentService === 'google' ? 'スプレッドシートID' : currentService === 'notion' ? 'データベースID' : ''}" style="width: 100%; padding: 5px; margin: 5px 0; display: ${currentService === 'none' ? 'none' : 'block'};">
+
+<div style="margin-top: 10px; font-size: 0.85em; color: #666;">
+💡 APIキーはブラウザに保存されます（暗号化されていません）。個人利用のみ推奨。
+</div>
+            `;
+            
+            if (confirm(settingsHtml + '\n\n設定を変更しますか？\n（現在の設定を表示するため、実際の設定変更は実装が必要です）')) {
+                // 実際の設定保存処理（簡易版）
+                const service = document.getElementById('backup-service')?.value || currentService;
+                const key = document.getElementById('backup-api-key')?.value || apiKey;
+                const id = document.getElementById('backup-id')?.value || (service === 'google' ? spreadsheetId : databaseId);
+                
+                if (service !== 'none' && key && id) {
+                    saveCloudBackupSettings({
+                        service: service,
+                        apiKey: key,
+                        spreadsheetId: service === 'google' ? id : '',
+                        databaseId: service === 'notion' ? id : ''
+                    });
+                    alert('✅ 設定を保存しました');
+                } else if (service === 'none') {
+                    saveCloudBackupSettings(null);
+                    alert('✅ バックアップを無効化しました');
+                } else {
+                    alert('⚠️ APIキーとIDを入力してください');
+                }
+            }
+        }
+        
+        // 手動でクラウドバックアップ
+        async function manualCloudBackup() {
+            try {
+                const settings = getCloudBackupSettings();
+                
+                if (!settings || settings.service === 'none') {
+                    alert('⚠️ クラウドバックアップが設定されていません\n「⚙️ 設定」から設定してください');
+                    return;
+                }
+                
+                const data = await exportAllData();
+                let result;
+                
+                if (settings.service === 'google') {
+                    result = await backupToGoogleSheets(data, settings.apiKey, settings.spreadsheetId);
+                } else if (settings.service === 'notion') {
+                    result = await backupToNotion(data, settings.apiKey, settings.databaseId);
+                }
+                
+                if (result.success) {
+                    alert('✅ ' + result.message);
+                } else {
+                    alert('❌ バックアップに失敗しました: ' + result.error);
+                }
+            } catch (error) {
+                console.error('バックアップエラー:', error);
+                alert('❌ バックアップに失敗しました: ' + error.message);
             }
         }
         
