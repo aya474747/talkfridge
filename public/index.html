@@ -335,24 +335,30 @@
                 
                 try {
                     // クライアント側で解析
+                    console.log('🎤 音声認識テキスト:', text);
                     const parseData = parseIngredients(text);
                     
                     console.log('🔍 抽出結果:', parseData);
                     console.log('📝 デバッグ情報:', parseData.debug);
+                    console.log('📊 抽出された食材数:', parseData.ingredients.length);
                     
                     if (parseData.success && parseData.ingredients.length > 0) {
+                        // 抽出結果を表示
+                        const ingredientNames = parseData.ingredients.map(ing => `${ing.name} ${ing.quantity}${ing.unit}`).join(', ');
+                        console.log('✅ 登録予定の食材:', ingredientNames);
+                        
                         // IndexedDBに保存
                         const addResult = await addIngredients(parseData.ingredients);
                         
                         if (addResult.success) {
-                            alert('✅ 食材を追加しました！');
+                            alert(`✅ 食材を追加しました！\n\n${ingredientNames}`);
                             loadIngredients();
                         } else {
                             alert('❌ エラー: ' + (addResult.error || '不明なエラー'));
                         }
                     } else {
                         console.error('❌ 抽出できなかった食材:', parseData.debug);
-                        alert(`⚠️ 食材情報を抽出できませんでした。\n認識されたテキスト: "${text}"\nこの形式で話してください: "鶏肉2枚、トマト3個"`);
+                        alert(`⚠️ 食材情報を抽出できませんでした。\n認識されたテキスト: "${text}"\n分割結果: ${JSON.stringify(parseData.debug.parsed_items)}\n\nこの形式で話してください: "鶏肉2枚、トマト3個"`);
                     }
                 } catch (error) {
                     console.error('エラー:', error);
