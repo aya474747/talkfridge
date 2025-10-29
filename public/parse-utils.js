@@ -264,11 +264,14 @@ function splitIntoFoodItems(text) {
         }
     }
     
-    // 1. 「、」「，」「と」「スペース」で分割（正規表現で一括処理）
-    // 音声認識では「、」「と」「スペース」が混在する可能性がある
+    // 1. 「、」「，」「と」「とか」「スペース」で分割（正規表現で一括処理）
+    // 音声認識では「、」「と」「とか」「スペース」が混在する可能性がある
     // スペースは連続している場合は1つとして扱う
+    // 「とか」も分割の区切りとして認識
     const allDelimiters = /[、，と\s]+/;
-    let parts = text.split(allDelimiters);
+    // 「とか」を明示的に分割
+    let normalizedText = text.replace(/とか/g, '、');
+    let parts = normalizedText.split(allDelimiters);
     
     // 2. 空のパートを除外してトリム
     parts = parts.map(p => p.trim()).filter(p => p && p.length > 0);
@@ -276,7 +279,7 @@ function splitIntoFoodItems(text) {
     console.log('🔍 最初の分割結果:', parts);
     console.log('🔍 分割パート数:', parts.length);
     
-    // もし分割されない場合（区切り文字がない）、スペースで再度分割を試みる
+    // もし分割されない場合（区切り文字がない場合）、食材名辞書を使って分割を試みる
     if (parts.length === 1) {
         const singlePart = parts[0];
         
@@ -286,15 +289,49 @@ function splitIntoFoodItems(text) {
             console.log('📌 スペースで再分割:', spaceSplitParts);
             parts = spaceSplitParts;
         } else {
-            // 商品名辞書に完全一致するものがあるか
-            const matchedFood = findFoodNameInText(singlePart);
-            if (matchedFood && matchedFood !== singlePart) {
-                // 商品名が見つかったが、完全一致ではない場合は分割が必要
-                console.log('📌 単一パート、商品名部分一致:', matchedFood);
-            } else if (matchedFood === singlePart) {
-                // 完全一致
-                console.log('✅ 完全一致の商品名:', matchedFood);
-                return [singlePart];
+            // 区切り文字がない場合、食材名辞書を使って可能な限り分割
+            console.log('🔍 区切り文字なし - 食材名辞書で分割を試行:', singlePart);
+            const foodItems = [];
+            let remaining = singlePart;
+            
+            // 長い食材名から順にマッチング
+            const sortedFoodNamesForSplit = [...COMMON_FOOD_NAMES].sort((a, b) => b.length - a.length);
+            
+            while (remaining.length > 0) {
+                let found = false;
+                for (const foodName of sortedFoodNamesForSplit) {
+                    if (remaining.startsWith(foodName)) {
+                        foodItems.push(foodName);
+                        remaining = remaining.substring(foodName.length).trim();
+                        console.log(`✅ 食材名を発見: ${foodName}, 残り: ${remaining}`);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    // マッチする食材名が見つからない場合、残りを1つの食材として扱う
+                    if (remaining.length > 0) {
+                        foodItems.push(remaining);
+                        console.log(`⚠️ 食材名辞書にないためそのまま追加: ${remaining}`);
+                    }
+                    break;
+                }
+            }
+            
+            if (foodItems.length > 1) {
+                console.log('✅ 食材名辞書による分割成功:', foodItems);
+                parts = foodItems;
+            } else {
+                // 商品名辞書に完全一致するものがあるか
+                const matchedFood = findFoodNameInText(singlePart);
+                if (matchedFood && matchedFood !== singlePart) {
+                    // 商品名が見つかったが、完全一致ではない場合は分割が必要
+                    console.log('📌 単一パート、商品名部分一致:', matchedFood);
+                } else if (matchedFood === singlePart) {
+                    // 完全一致
+                    console.log('✅ 完全一致の商品名:', matchedFood);
+                    return [singlePart];
+                }
             }
         }
     }
