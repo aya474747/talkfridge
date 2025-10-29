@@ -61,17 +61,17 @@
         .eye {
             width: 40px;
             height: 40px;
-            background: white;
+            /* background: #d6d6d6; */
             border-radius: 50%;
             position: relative;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); */
         }
         .eye .pupil {
             position: absolute;
             top: 10px;
             left: 13px;
-            width: 10px;
-            height: 10px;
+            width: 15px;
+            height: 15px;
             background: #333;
             border-radius: 50%;
         }
@@ -365,9 +365,9 @@
                 console.log('📝 認識結果:', text);
                 
                 try {
-                    // クライアント側で解析
+                    // クライアント側で解析（非同期）
                     console.log('🎤 音声認識テキスト:', text);
-                    const parseData = parseIngredients(text);
+                    const parseData = await parseIngredients(text);
                     
                     console.log('🔍 抽出結果:', parseData);
                     console.log('📝 デバッグ情報:', parseData.debug);
@@ -521,8 +521,8 @@
         // テキスト入力を処理
         async function processTextInput(text) {
             try {
-                // クライアント側で解析
-                const parseData = parseIngredients(text);
+                // クライアント側で解析（非同期）
+                const parseData = await parseIngredients(text);
                 
                 if (parseData.success && parseData.ingredients.length > 0) {
                     // IndexedDBに保存
