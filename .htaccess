@@ -1,0 +1,48 @@
+# ロリポップ（Nginx + Apache構成）でのデプロイ用設定
+
+# Passengerを有効化
+PassengerEnabled On
+PassengerAppRoot /home/users/0/your-username/web/your-app-directory
+PassengerPython /usr/local/bin/python3
+
+# WSGIアプリケーションファイルを指定
+PassengerAppType wsgi
+PassengerStartupFile passenger_wsgi.py
+
+# ディレクトリインデックスを無効化
+DirectoryIndex passenger_wsgi.py
+
+# Nginx + Apache構成の場合の追加設定
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # 既存のファイルやディレクトリに直接アクセスする場合はリライトしない
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # すべてのリクエストをFlaskアプリに転送
+    RewriteRule ^(.*)$ passenger_wsgi.py/$1 [QSA,L]
+</IfModule>
+
+# HTTPSリダイレクト（SSL証明書設定後、コメントアウトを解除）
+# RewriteEngine On
+# RewriteCond %{HTTP:X-Forwarded-Proto} !https
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+# 静的ファイルのキャッシュ設定
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpg "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+</IfModule>
+
+# セキュリティヘッダー（HTTPS使用時）
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+</IfModule>

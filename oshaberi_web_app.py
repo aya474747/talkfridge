@@ -20,75 +20,42 @@ app.secret_key = os.environ.get('SECRET_KEY', 'oshaberi-reizoko-secret-key')
 # Gemini API の初期化
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-    # 最新のFlashモデルを使用
-    gemini_model = genai.GenerativeModel('models/gemini-2.0-flash')
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        # 利用可能な最新のモデルを使用
+        try:
+            gemini_model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        except:
+            try:
+                gemini_model = genai.GenerativeModel('gemini-pro')
+            except:
+                gemini_model = genai.GenerativeModel('models/gemini-pro')
+    except Exception as e:
+        print(f"⚠️ Gemini API初期化エラー: {e}")
+        gemini_model = None
 else:
     gemini_model = None
+    print("ℹ️ GEMINI_API_KEYが設定されていません。レシピ提案機能は使用できません。")
 
 # データベース初期化
 db = IngredientsDatabase()
 
-# カテゴリ推測のキーワード（詳細版）
+# カテゴリ推測のキーワード
 CATEGORY_KEYWORDS = {
-    '肉': ['牛肉', '鶏肉', '豚肉', '鶏胸肉', '鶏もも肉', 'ステーキ', 'ロース', 'ヒレ',
-            'チキン', '豚バラ', 'ハム', 'ベーコン', 'ソーセージ', 'ウインナー',
-            '鮭', 'サーモン', '鯖', 'サバ', 'マグロ', 'ウナギ', 'カツオ', 'さんま', 'イワシ', 'アジ', 'しらす', 'ツナ', '魚肉'],
-    '野菜': ['もやし', '豆もやし', 'トマト', 'ニンジン', '人参', 'キャベツ', '玉ねぎ', '玉葱',
-              'きゅうり', 'キュウリ', 'ピーマン', '白菜', '大根', 'だいこん', 'ごぼう',
-              'レタス', 'ほうれん草', 'ほうれんそう', '小松菜', 'チンゲン菜', '水菜',
-              'ブロッコリー', 'カリフラワー', 'さやいんげん', 'いんげん', 'ネギ', '長ネギ',
-              'みょうが', '生姜', 'ニンニク', 'ジャガイモ', 'たまねぎ'],
-    'きのこ': ['まいたけ', 'マイタケ', '舞茸', 'えのき', 'えのき茸', 'えのきたけ',
-                'しいたけ', 'シイタケ', 'しめじ', 'シメジ', 'ぶなしめじ', 'ブナシメジ',
-                'なめこ', 'ナメコ', 'マッシュルーム', 'きのこ',
-                'エリンギ', 'エノキタケ', 'エノキ茸'],
-    '乳製品': ['牛乳', 'ぎゅうにゅう', '乳製品', 'チーズ', 'ヨーグルト', 'バター', '生クリーム', 'クリーム',
-                'マーガリン', 'プロセスチーズ', 'ミルク'],
-    '穀物': ['米', 'ご飯', 'ごはん', 'パン', '食パン', 'フランスパン', 'クロワッサン',
-              '麺', 'うどん', 'そば', 'スパゲッティ', 'パスタ', 'ラーメン',
-              'そうめん', '冷やし中華', '中華麺'],
-    '調味料': ['醤油', 'しょうゆ', '味噌', 'みそ', '塩', 'しお', '砂糖', 'さとう',
-                '胡椒', 'こしょう', '油', 'サラダ油', 'オリーブ油', 'ごま油',
-                '酢', 'マヨネーズ', 'ケチャップ', 'ソース', 'ウスターソース'],
-    '加工食品': ['プチッと鍋', '即席麺', 'カップ麺', '冷凍食品', '鍋', 'なべ',
-                  'じゃがりこ', 'ポテトチップス', 'スナック', '菓子'],
+    '肉': ['鶏', '肉', '豚', '牛', '魚', 'ハム', 'ベーコン', 'ソーセージ'],
+    '野菜': ['トマト', 'ニンジン', 'キャベツ', '玉ねぎ', 'きゅうり', 'ピーマン', '白菜', '大根'],
+    '乳製品': ['牛乳', 'チーズ', 'ヨーグルト', 'バター', '生クリーム'],
+    '穀物': ['米', 'パン', '麺', 'うどん', 'そば', 'スパゲッティ'],
+    '調味料': ['醤油', '味噌', '塩', '砂糖', '胡椒', '油'],
     'その他': []
 }
 
 def guess_category(name):
     """食材名からカテゴリを推測"""
-    # 大文字小文字を区別しない
-    name_lower = name.lower()
-    
-    # 特定のキーワードを優先的にチェック（短いキーワードで誤判定を防ぐ）
-    # 「牛乳」は「乳製品」として判定されるように、「牛」単独よりも「牛乳」を優先
-    special_matches = {
-        '牛乳': '乳製品',
-        'ぎゅうにゅう': '乳製品',
-        'チーズ': '乳製品',
-        'ヨーグルト': '乳製品',
-        '牛肉': '肉',
-        '鶏肉': '肉',
-        '豚肉': '肉',
-    }
-    
-    # 特殊なマッチを優先的にチェック
-    for keyword, category in special_matches.items():
-        if keyword.lower() in name_lower:
-            print(f"🏷️ カテゴリ判定: {name} → {category} (特別キーワード: {keyword})")
-            return category
-    
-    # 通常のキーワードを長い順にチェック
     for category, keywords in CATEGORY_KEYWORDS.items():
-        # 長いキーワードから順にチェック
-        sorted_keywords = sorted(keywords, key=len, reverse=True)
-        for keyword in sorted_keywords:
-            if keyword.lower() in name_lower:
-                print(f"🏷️ カテゴリ判定: {name} → {category} (キーワード: {keyword})")
+        for keyword in keywords:
+            if keyword in name:
                 return category
-    
-    print(f"🏷️ カテゴリ判定: {name} → その他")
     return 'その他'
 
 @app.route('/')
@@ -106,20 +73,8 @@ def parse_ingredients():
     
     ingredients = []
     
-    # カンマで分割（「と」は数字の前のものだけ区切りとして使用）
-    # 例: "プチッと鍋、トマト3個" → ["プチッと鍋", "トマト3個"]
-    # 例: "鶏肉とトマト2個" → ["鶏肉", "トマト2個"]
-    
-    # まずカンマで分割
-    comma_split = re.split(r'[、，]', text)
-    items = []
-    
-    for item in comma_split:
-        # 数字の前の「と」だけを区切りとして使用
-        # 「〇〇と〇〇2個」→ 「〇〇」と「〇〇2個」に分割
-        # 「プチッと」は数字がないので分割されない
-        parts = re.split(r'と(?=\d+[枚個本mlgkgリットル片パック入りつヶ])', item)
-        items.extend([p.strip() for p in parts if p.strip()])
+    # 「、」や「と」で区切る
+    items = re.split(r'[、，と]', text)
     
     print(f"📦 分割したアイテム: {items}")  # デバッグ用
     
@@ -129,7 +84,6 @@ def parse_ingredients():
             continue
         
         # 「食材名 + 数量 + 単位」を抽出
-        # 例: "プチッと鍋2つ" → name="プチッと鍋", quantity=2, unit="つ"
         # 例: "鶏肉2枚" → name="鶏肉", quantity=2, unit="枚"
         match = re.match(r'(.+?)(\d+\.?\d*)(枚|個|本|ml|g|kg|l|リットル|片|パック|入り|つ|ヶ)', item)
         
@@ -140,27 +94,17 @@ def parse_ingredients():
             
             print(f"✅ 抽出成功: {name} {quantity}{unit}")  # デバッグ用
             
-            # カテゴリを推測（商品名が特殊でもカテゴリ推測は試みる）
+            # カテゴリを推測
             category = guess_category(name)
             
             ingredients.append({
-                'name': name,  # 商品名をそのまま保持
+                'name': name,
                 'quantity': quantity,
                 'unit': unit,
                 'category': category
             })
         else:
-            # 数値がない場合は1個として登録
-            print(f"⚠️ 数量が見つからないので1個として登録: {item}")
-            
-            category = guess_category(item)
-            
-            ingredients.append({
-                'name': item,  # 商品名をそのまま保持
-                'quantity': 1,
-                'unit': '個',
-                'category': category
-            })
+            print(f"❌ 抽出失敗: {item}")  # デバッグ用
     
     print(f"🍽️ 抽出された食材数: {len(ingredients)}")  # デバッグ用
     
@@ -238,40 +182,9 @@ def use_ingredient():
         'message': '食材を使用しました' if success else 'エラーが発生しました'
     })
 
-@app.route('/api/update-ingredient', methods=['POST'])
-def update_ingredient():
-    """食材を更新"""
-    data = request.get_json()
-    ingredient_id = data.get('ingredient_id')
-    name = data.get('name')
-    quantity = data.get('quantity')
-    unit = data.get('unit')
-    category = data.get('category')
-    expiry_date = data.get('expiry_date')
-    
-    if not ingredient_id:
-        return jsonify({'error': 'ingredient_id is required'})
-    
-    success = db.update_ingredient(
-        ingredient_id=ingredient_id,
-        name=name,
-        quantity=quantity,
-        unit=unit,
-        category=category,
-        expiry_date=expiry_date
-    )
-    
-    return jsonify({
-        'success': success,
-        'message': '食材を更新しました' if success else 'エラーが発生しました'
-    })
-
 @app.route('/api/suggest-recipe', methods=['POST'])
 def suggest_recipe():
     """Gemini API を使ってレシピ提案"""
-    # API使用回数を記録
-    _record_api_usage()
-    
     if not gemini_model:
         return jsonify({
             'success': False,
@@ -339,95 +252,12 @@ def get_statistics():
     stats = db.get_statistics()
     return jsonify(stats)
 
-def _record_api_usage():
-    """API使用回数を記録"""
-    try:
-        import json
-        from datetime import datetime
-        
-        usage_file = 'api_usage.json'
-        usage_data = {'today': [], 'this_month': []}
-        
-        if os.path.exists(usage_file):
-            with open(usage_file, 'r') as f:
-                usage_data = json.load(f)
-        
-        now = datetime.now()
-        timestamp = now.strftime('%Y-%m-%d %H:%M:%S')
-        
-        # 今日の使用回数を追加
-        usage_data['today'].append(timestamp)
-        usage_data['this_month'].append(timestamp)
-        
-        # 今日以外の日付を削除
-        usage_data['today'] = [
-            ts for ts in usage_data['today']
-            if ts.startswith(now.strftime('%Y-%m-%d'))
-        ]
-        
-        # 今月以外のデータを削除
-        usage_data['this_month'] = [
-            ts for ts in usage_data['this_month']
-            if ts.startswith(now.strftime('%Y-%m'))
-        ]
-        
-        with open(usage_file, 'w') as f:
-            json.dump(usage_data, f, indent=2)
-    except:
-        pass  # エラーは無視
-
 @app.route('/api/get-expiring-soon', methods=['GET'])
 def get_expiring_soon():
     """賞味期限が近い食材を取得"""
     days = int(request.args.get('days', 3))
     ingredients = db.get_expiring_soon(days)
     return jsonify({'ingredients': ingredients})
-
-@app.route('/api/get-quota', methods=['GET'])
-def get_quota():
-    """API の残り使用量を取得"""
-    if not gemini_model:
-        return jsonify({
-            'daily_remaining': 0,
-            'monthly_remaining': 0,
-            'message': 'Gemini API が設定されていません'
-        })
-    
-    try:
-        # 無料枠の情報
-        daily_limit = 60  # 1日60リクエスト
-        monthly_limit = 1500  # 月間1,500リクエスト
-        
-        # 実際の使用量は Gemini API から取得できないため、
-        # アプリ内で使用回数をカウント
-        usage_file = 'api_usage.json'
-        usage_data = {'today': [], 'this_month': []}
-        
-        if os.path.exists(usage_file):
-            with open(usage_file, 'r') as f:
-                import json
-                usage_data = json.load(f)
-        
-        today_count = len(usage_data.get('today', []))
-        month_count = len(usage_data.get('this_month', []))
-        
-        daily_remaining = max(0, daily_limit - today_count)
-        monthly_remaining = max(0, monthly_limit - month_count)
-        
-        return jsonify({
-            'daily_remaining': daily_remaining,
-            'monthly_remaining': monthly_remaining,
-            'daily_limit': daily_limit,
-            'monthly_limit': monthly_limit,
-            'today_count': today_count,
-            'month_count': month_count
-        })
-    except Exception as e:
-        return jsonify({
-            'error': str(e),
-            'daily_remaining': 60,
-            'monthly_remaining': 1500
-        })
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
