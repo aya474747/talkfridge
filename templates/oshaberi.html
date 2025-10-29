@@ -348,7 +348,13 @@
         // 音声入力開始
         function startVoiceInput() {
             if (!recognition) {
-                alert('お使いのブラウザでは音声認識がサポートされていません');
+                // 音声認識が使えない場合はテキスト入力を提案
+                const useText = confirm('iPhoneのChromeでは音声認識が使えません。\n代わりにテキスト入力を使用しますか？\n（キャンセル: マイクボタンを非表示にします）');
+                if (useText) {
+                    showTextInput();
+                } else {
+                    document.getElementById('micButton').style.display = 'none';
+                }
                 return;
             }
 
@@ -421,6 +427,18 @@
             console.error('音声認識エラー:', event.error);
             document.getElementById('micButton').classList.remove('listening');
             isListening = false;
+            
+            let errorMessage = '音声認識でエラーが発生しました';
+            if (event.error === 'not-allowed') {
+                errorMessage = 'マイクの使用が許可されていません。ブラウザ設定でマイクのアクセスを許可してください。';
+            } else if (event.error === 'no-speech') {
+                errorMessage = '音声が検出されませんでした。もう一度お試しください。';
+            } else if (event.error === 'network') {
+                errorMessage = 'ネットワークエラーが発生しました。';
+            } else if (event.error === 'aborted') {
+                return; // ユーザーが中断した場合は何もしない
+            }
+            alert('⚠️ ' + errorMessage);
         };
 
         // 食材一覧を読み込み
@@ -628,6 +646,49 @@
                 }
             } catch (error) {
                 console.error('エラー:', error);
+            }
+        }
+
+        // テキスト入力フォームを表示
+        function showTextInput() {
+            const text = prompt('食材を入力してください\n例: 鶏肉2枚、トマト3個、ニンジン2本');
+            if (text && text.trim()) {
+                processTextInput(text.trim());
+            }
+        }
+        
+        // テキスト入力を処理
+        async function processTextInput(text) {
+            try {
+                const parseResponse = await fetch('/api/parse-ingredients', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({text: text})
+                });
+                
+                const parseData = await parseResponse.json();
+                
+                if (parseData.success && parseData.ingredients.length > 0) {
+                    const addResponse = await fetch('/api/add-ingredients', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ingredients: parseData.ingredients})
+                    });
+                    
+                    const addData = await addResponse.json();
+                    
+                    if (addData.success) {
+                        alert('✅ 食材を追加しました！');
+                        loadIngredients();
+                    } else {
+                        alert('❌ エラー: ' + (addData.error || '不明なエラー'));
+                    }
+                } else {
+                    alert(`⚠️ 食材情報を抽出できませんでした。\n入力されたテキスト: "${text}"\nこの形式で入力してください: "鶏肉2枚、トマト3個"`);
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+                alert('❌ エラーが発生しました: ' + error.message);
             }
         }
 
