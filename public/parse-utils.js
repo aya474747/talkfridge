@@ -3,6 +3,40 @@
  * 音声認識テキストから食材情報を抽出
  */
 
+// 日本語の数量表現を数値に変換
+function convertJapaneseNumber(text) {
+    const numberMap = {
+        // ひとつ、ふたつ、みっつ...
+        'ひとつ': 1, '一つ': 1,
+        'ふたつ': 2, '二つ': 2, 'ふた個': 2, '二個': 2,
+        'みっつ': 3, '三つ': 3, 'み個': 3, '三個': 3,
+        'よっつ': 4, '四つ': 4, 'よ個': 4, '四個': 4,
+        'いつつ': 5, '五つ': 5, 'ご個': 5, '五個': 5,
+        'むっつ': 6, '六つ': 6, 'ろっ個': 6, '六個': 6,
+        'ななつ': 7, '七つ': 7, 'なな個': 7, '七個': 7,
+        'やっつ': 8, '八つ': 8, 'はっ個': 8, '八個': 8,
+        'ここのつ': 9, '九つ': 9, 'きゅう個': 9, '九個': 9,
+        'とお': 10, '十': 10, 'じゅう個': 10, '十個': 10,
+        // 一個、二個、三個...
+        '一個': 1, '二個': 2, '三個': 3, '四個': 4, '五個': 5,
+        '六個': 6, '七個': 7, '八個': 8, '九個': 9, '十個': 10,
+        // 漢数字
+        '一': 1, '二': 2, '三': 3, '四': 4, '五': 5,
+        '六': 6, '七': 7, '八': 8, '九': 9, '十': 10
+    };
+    
+    // 長いパターンから順にマッチ（例：「みっつ」を「み」より優先）
+    const sortedKeys = Object.keys(numberMap).sort((a, b) => b.length - a.length);
+    
+    for (const key of sortedKeys) {
+        if (text.includes(key)) {
+            return { number: numberMap[key], matched: key, remaining: text.replace(key, '').trim() };
+        }
+    }
+    
+    return null;
+}
+
 // カテゴリキーワード（サーバー版と同じロジック）
 const CATEGORY_KEYWORDS = {
     '肉': ['鶏肉', '牛肉', '豚肉', 'ハム', 'ベーコン', 'ソーセージ', 'ウインナー', 'チキン', 'もも', 'むね', 'ささみ', 'ひき肉', 'ミンチ', 'ステーキ', 'ロース', 'バラ', 'サーロイン'],
@@ -103,9 +137,23 @@ const SPECIAL_MATCHES = {
     'プチっと': '加工食品'
 };
 
-// カテゴリを推測（改善版：確実な認識を優先）
-function guessCategory(name) {
-    // 1. 最優先：COMMON_FOOD_DICTで完全一致（確実な認識）
+// カテゴリを推測（改善版：確実な認識を優先、ユーザー辞書対応）
+async function guessCategory(name) {
+    // 0. 最最優先：ユーザー辞書でチェック（非同期）
+    if (typeof getFoodCategoryFromDictionary === 'function') {
+        try {
+            const userDictResult = await getFoodCategoryFromDictionary(name);
+            if (userDictResult.success) {
+                console.log(`📚 ユーザー辞書から取得: ${name} → ${userDictResult.category}`);
+                return userDictResult.category;
+            }
+        } catch (error) {
+            console.warn('ユーザー辞書検索エラー:', error);
+            // エラー時は次のステップに進む
+        }
+    }
+    
+    // 1. 優先：COMMON_FOOD_DICTで完全一致（確実な認識）
     if (COMMON_FOOD_DICT[name]) {
         return COMMON_FOOD_DICT[name];
     }
@@ -295,8 +343,8 @@ function splitIntoFoodItems(text) {
     return results;
 }
 
-// 音声認識テキストから食材情報を抽出
-function parseIngredients(text) {
+// 音声認識テキストから食材情報を抽出（非同期版：ユーザー辞書対応）
+async function parseIngredients(text) {
     console.log('📝 受信したテキスト:', text);
     
     const ingredients = [];
@@ -313,18 +361,69 @@ function parseIngredients(text) {
         
         // 「食材名 + 数量 + 単位」を抽出
         // 例: "鶏肉2枚" → name="鶏肉", quantity=2, unit="枚"
-        const match = item.match(/^(.+?)(\d+\.?\d*)(枚|個|本|ml|g|kg|l|リットル|片|パック|入り|つ|ヶ)$/);
+        // 例: "玉ねぎ三個" → name="玉ねぎ", quantity=3, unit="個"
+        let match = item.match(/^(.+?)(\d+\.?\d*)(枚|個|本|ml|g|kg|l|リットル|片|パック|入り|つ|ヶ)$/);
+        
+        let name, quantity, unit;
+        let japaneseNumber = null;
         
         if (match) {
-            const name = match[1].trim();
-            const quantity = parseFloat(match[2]);
-            const unit = match[3];
+            // 数字パターンでマッチ
+            name = match[1].trim();
+            quantity = parseFloat(match[2]);
+            unit = match[3];
+            console.log(`✅ 抽出成功（数字の数量）: ${name} ${quantity}${unit}`);
+        } else {
+            // 日本語の数量表現をチェック
+            japaneseNumber = convertJapaneseNumber(item);
             
-            console.log(`✅ 抽出成功（数量あり）: ${name} ${quantity}${unit}`);
-            
-            // カテゴリを推測（COMMON_FOOD_DICTを優先）
+            if (japaneseNumber) {
+                // 日本語の数量表現が見つかった場合
+                // 食材名と単位を抽出（正規表現でエスケープ）
+                const escapedMatch = japaneseNumber.matched.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const jpMatch = item.match(new RegExp(`^(.+?)${escapedMatch}(つ|個|枚|本|片)?$`));
+                
+                if (jpMatch && jpMatch[1].trim()) {
+                    // 「食材名 + 日本語数量 + 単位」パターン
+                    name = jpMatch[1].trim();
+                    quantity = japaneseNumber.number;
+                    unit = jpMatch[2] || '個';  // 単位が省略された場合は「個」をデフォルト
+                    console.log(`✅ 抽出成功（日本語数量）: ${name} ${quantity}${unit} (${japaneseNumber.matched} → ${quantity})`);
+                } else {
+                    // 「食材名 日本語数量」の形式（スペース区切りなど）
+                    // 例: "玉ねぎ みっつ" → "玉ねぎ みっつ"のまま
+                    const parts = item.split(/\s+/);
+                    if (parts.length >= 2) {
+                        // 最後の部分が数量表現の可能性
+                        const lastPart = parts[parts.length - 1];
+                        const lastNumber = convertJapaneseNumber(lastPart);
+                        if (lastNumber && parts.length > 1) {
+                            name = parts.slice(0, -1).join(' ').trim();
+                            quantity = lastNumber.number;
+                            unit = '個';
+                            console.log(`✅ 抽出成功（スペース区切り日本語数量）: ${name} ${quantity}${unit}`);
+                        } else {
+                            // パターンが一致しない場合
+                            name = japaneseNumber.remaining || item.replace(japaneseNumber.matched, '').trim() || '食材';
+                            quantity = japaneseNumber.number;
+                            unit = '個';
+                            console.log(`✅ 抽出成功（日本語数量のみ）: ${name} ${quantity}${unit}`);
+                        }
+                    } else {
+                        // 数量のみの場合
+                        name = japaneseNumber.remaining || '食材';
+                        quantity = japaneseNumber.number;
+                        unit = '個';
+                        console.log(`✅ 抽出成功（日本語数量のみ）: ${name} ${quantity}${unit}`);
+                    }
+                }
+            }
+        }
+        
+        if (match || japaneseNumber) {
+            // カテゴリを推測（非同期でユーザー辞書を確認）
             const directCategory = COMMON_FOOD_DICT[name];
-            const category = directCategory || guessCategory(name);
+            const category = directCategory || await guessCategory(name);
             
             console.log(`📊 カテゴリ: ${name} → ${category}${directCategory ? ' (辞書直接)' : ' (推測)'}`);
             
@@ -343,8 +442,9 @@ function parseIngredients(text) {
                 // 商品名として認識
                 console.log(`📌 商品名として登録: ${matchedFood}`);
                 
-                // COMMON_FOOD_DICTから直接カテゴリを取得（確実）
-                const category = COMMON_FOOD_DICT[matchedFood] || guessCategory(matchedFood);
+                // COMMON_FOOD_DICTから直接カテゴリを取得、なければ非同期で推測
+                const directCategory = COMMON_FOOD_DICT[matchedFood];
+                const category = directCategory || await guessCategory(matchedFood);
                 
                 ingredients.push({
                     name: matchedFood,
@@ -356,9 +456,9 @@ function parseIngredients(text) {
                 // 通常の食材名として処理
                 console.log(`📌 数量なし - 食材名として登録: ${item}`);
                 
-                // まずCOMMON_FOOD_DICTでチェック（確実な認識）
+                // まずCOMMON_FOOD_DICTでチェック、なければ非同期で推測
                 const directCategory = COMMON_FOOD_DICT[item];
-                const category = directCategory || guessCategory(item);
+                const category = directCategory || await guessCategory(item);
                 
                 ingredients.push({
                     name: item,  // 食材名をそのまま使用
