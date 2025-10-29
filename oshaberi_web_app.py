@@ -274,6 +274,7 @@ if __name__ == '__main__':
     print("📱 おしゃべり冷蔵庫アプリを開始します...")
     print(f"📱 アクセス: http://localhost:{port}")
     print(f"🤖 Gemini API: {'有効' if gemini_model else '無効'}")
+    print(f"💾 データベース: {db.db_path if db else '未初期化'}")
     
     app.run(host='0.0.0.0', port=port, debug=debug)
 

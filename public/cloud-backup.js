@@ -106,3 +106,4 @@ function getCloudBackupSettings() {
     return stored ? JSON.parse(stored) : null;
 }
 
+

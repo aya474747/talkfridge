@@ -1,59 +1,60 @@
 # ☁️ クラウドバックアップ設定ガイド
 
-TalkFridgeのデータを自動的にGoogleスプレッドシートやNotionにバックアップする方法です。
+TalkFridge のデータを自動的に Google スプレッドシートや Notion にバックアップする方法です。
 
 ---
 
-## 🔧 Googleスプレッドシート連携
+## 🔧 Google スプレッドシート連携
 
 ### 1. スプレッドシートを作成
 
-1. [Googleスプレッドシート](https://sheets.google.com) を開く
+1. [Google スプレッドシート](https://sheets.google.com) を開く
 2. 新しいスプレッドシートを作成
-3. スプレッドシートIDをコピー（URLの `/d/` と `/edit` の間の文字列）
+3. スプレッドシート ID をコピー（URL の `/d/` と `/edit` の間の文字列）
 
 **例：**
+
 ```
 https://docs.google.com/spreadsheets/d/ABC123XYZ456/edit
                                         ↑これがスプレッドシートID
 ```
 
-### 2. Google Cloud Console でAPIキーを取得
+### 2. Google Cloud Console で API キーを取得
 
 1. [Google Cloud Console](https://console.cloud.google.com/) にアクセス
 2. プロジェクトを作成（または既存のプロジェクトを選択）
-3. 「APIとサービス」→「ライブラリ」→「Google Sheets API」を有効化
-4. 「APIとサービス」→「認証情報」→「認証情報を作成」→「APIキー」
-5. APIキーをコピー
+3. 「API とサービス」→「ライブラリ」→「Google Sheets API」を有効化
+4. 「API とサービス」→「認証情報」→「認証情報を作成」→「API キー」
+5. API キーをコピー
 
 ### 3. アプリで設定
 
 1. 「食べた歴史」タブを開く
 2. 「⚙️ 設定」をクリック
-3. サービスを「Googleスプレッドシート」に選択
-4. APIキーとスプレッドシートIDを入力
+3. サービスを「Google スプレッドシート」に選択
+4. API キーとスプレッドシート ID を入力
 5. 設定を保存
 
 ### 4. スプレッドシートの共有設定（重要）
 
-作成したスプレッドシートを「リンクを知っている全員」に編集権限を付与するか、APIキーを使ってアクセスできるように設定する必要があります。
+作成したスプレッドシートを「リンクを知っている全員」に編集権限を付与するか、API キーを使ってアクセスできるように設定する必要があります。
 
 ---
 
-## 📝 Notion連携
+## 📝 Notion 連携
 
-### 1. Notionインテグレーションを作成
+### 1. Notion インテグレーションを作成
 
 1. [Notion Integrations](https://www.notion.so/my-integrations) にアクセス
 2. 「+ New integration」をクリック
 3. 名前を入力（例：「TalkFridge」）
 4. 「Internal Integration」を選択
 5. 「Submit」をクリック
-6. **Internal Integration Token** をコピー（これがAPIキー）
+6. **Internal Integration Token** をコピー（これが API キー）
 
 ### 2. データベースを作成
 
-1. Notionで新しいページを作成
+1. Notion で新しいページを作成
 2. 「/」と入力して「Table」を選択
 3. 列を追加：
    - 食材名（タイトル）
@@ -66,9 +67,10 @@ https://docs.google.com/spreadsheets/d/ABC123XYZ456/edit
 
 1. データベースの「...」メニューをクリック
 2. 「Connections」→ 作成したインテグレーションを選択
-3. データベースIDをコピー（URLの最後の部分）
+3. データベース ID をコピー（URL の最後の部分）
 
 **例：**
+
 ```
 https://www.notion.so/workspace/ABC123XYZ456
                                       ↑これがデータベースID
@@ -79,7 +81,7 @@ https://www.notion.so/workspace/ABC123XYZ456
 1. 「食べた歴史」タブを開く
 2. 「⚙️ 設定」をクリック
 3. サービスを「Notion」に選択
-4. APIキー（Internal Integration Token）とデータベースIDを入力
+4. API キー（Internal Integration Token）とデータベース ID を入力
 5. 設定を保存
 
 ---
@@ -94,14 +96,16 @@ https://www.notion.so/workspace/ABC123XYZ456
 
 ## ⚠️ 注意事項
 
-1. **APIキーのセキュリティ**
-   - APIキーはブラウザのlocalStorageに保存されます
+1. **API キーのセキュリティ**
+
+   - API キーはブラウザの localStorage に保存されます
    - 暗号化されていないため、個人利用のみ推奨
    - 共有のコンピューターでは使用しないでください
 
 2. **無料枠**
-   - Google Sheets API: 1分あたり100リクエスト（個人利用なら十分）
-   - Notion API: 月間3リクエスト/秒（個人利用なら十分）
+
+   - Google Sheets API: 1 分あたり 100 リクエスト（個人利用なら十分）
+   - Notion API: 月間 3 リクエスト/秒（個人利用なら十分）
 
 3. **データ形式**
    - 現在は食材情報のみバックアップ（レシピ履歴・使用履歴は今後追加予定）
@@ -110,7 +114,7 @@ https://www.notion.so/workspace/ABC123XYZ456
 
 ## 🚀 より安全な方法（将来実装予定）
 
-- OAuth認証（APIキー不要）
+- OAuth 認証（API キー不要）
 - 暗号化されたバックアップ
 - 自動定期的バックアップ
 - 複数のバックアップ先の選択

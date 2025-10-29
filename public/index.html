@@ -251,31 +251,22 @@
                         
                         <!-- データ管理 -->
                         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #E0E0E0;">
-                            <h5 class="mb-3">📦 データ管理</h5>
+                            <h5 class="mb-3">📦 クラウド自動バックアップ（Firebase）</h5>
                             <div style="display: flex; flex-direction: column; gap: 10px;">
-                                <button class="btn btn-sm" style="background: #4A90E2; color: white; border: none; padding: 8px 15px;" onclick="exportData()">
-                                    💾 データをエクスポート（バックアップ）
-                                </button>
-                                <button class="btn btn-sm" style="background: #50C878; color: white; border: none; padding: 8px 15px;" onclick="importData()">
-                                    📥 データをインポート（復元）
-                                </button>
-                                <p style="font-size: 0.85em; color: #666; margin-top: 10px;">
-                                    💡 ブラウザのデータを削除すると食材情報が消えます。定期的にバックアップを取ることをお勧めします。
-                                </p>
-                                
-                                <!-- クラウドバックアップ設定 -->
-                                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #E0E0E0;">
-                                    <h6 class="mb-2">☁️ クラウド自動バックアップ（オプション）</h6>
-                                    <button class="btn btn-sm" style="background: #6C757D; color: white; border: none; padding: 6px 12px; font-size: 0.9em;" onclick="showCloudBackupSettings()">
-                                        ⚙️ 設定
-                                    </button>
-                                    <button class="btn btn-sm" style="background: #28A745; color: white; border: none; padding: 6px 12px; font-size: 0.9em; margin-left: 5px;" onclick="manualCloudBackup()">
-                                        🔄 今すぐバックアップ
-                                    </button>
-                                    <p style="font-size: 0.75em; color: #999; margin-top: 8px;">
-                                        GoogleスプレッドシートやNotionに自動でバックアップできます
-                                    </p>
+                                <!-- Firebase認証 -->
+                                <div id="firebase-auth-status">
+                                    <div style="padding: 10px; background: #FFF3E0; border-radius: 6px;">
+                                        <div style="font-size: 0.85em; color: #666; margin-bottom: 10px;">
+                                            Firebase設定中...
+                                        </div>
+                                    </div>
                                 </div>
+                                <p style="font-size: 0.75em; color: #999; margin-top: 10px;">
+                                    💡 Googleアカウントでログインすると、データが自動的にFirebaseに保存されます<br>
+                                    💡 他のデバイスでも同じアカウントでログインすれば、データを同期できます<br>
+                                    💡 ブラウザのデータを削除しても、ログインすれば自動的にデータが復元されます<br>
+                                    📖 設定方法：<code>FIREBASE_SETUP_BEGINNER.md</code> を参照してください
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -302,10 +293,19 @@
     </button>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Firebase設定 -->
+    <script src="firebase-config.js"></script>
+    
     <!-- PWA用スクリプト -->
     <script src="indexdb-store.js"></script>
     <script src="parse-utils.js"></script>
     <script src="cloud-backup.js"></script>
+    <script src="firebase-backup.js"></script>
     <!-- Gemini API (CDN) -->
     <script src="https://cdn.jsdelivr.net/npm/@google/generative-ai@0.21.0/dist/index.umd.js"></script>
     <script>
@@ -414,21 +414,22 @@
                             alert(message);
                             loadIngredients();
                             
-                            // クラウドバックアップ設定がある場合は自動バックアップ
+                            // Firebaseに自動バックアップ（ログイン中の場合）
                             try {
-                                const backupSettings = getCloudBackupSettings();
-                                if (backupSettings && backupSettings.service !== 'none') {
-                                    // バックグラウンドで実行（エラーがあっても続行）
+                                if (typeof autoBackupToFirestore === 'function' && typeof currentUser !== 'undefined' && currentUser) {
                                     setTimeout(async () => {
                                         try {
-                                            await manualCloudBackup();
+                                            const result = await autoBackupToFirestore();
+                                            if (result.success) {
+                                                console.log('✅ Firebase自動バックアップ成功');
+                                            }
                                         } catch (e) {
-                                            console.warn('自動バックアップエラー:', e);
+                                            console.warn('Firebase自動バックアップエラー:', e);
                                         }
-                                    }, 1000);
+                                    }, 500);
                                 }
                             } catch (e) {
-                                console.warn('自動バックアップチェックエラー:', e);
+                                console.warn('Firebase自動バックアップチェックエラー:', e);
                             }
                         } else {
                             alert(`❌ エラー: ${addResult.failed}個すべての食材の追加に失敗しました`);

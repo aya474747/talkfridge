@@ -11,3 +11,4 @@ echo "---"
 # gunicornで起動
 exec gunicorn oshaberi_web_app:app --bind 0.0.0.0:$PORT --timeout 120 --workers 1 --threads 2 --access-logfile - --error-logfile - --log-level debug
 
+
