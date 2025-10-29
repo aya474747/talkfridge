@@ -1,24 +1,43 @@
-# 🍽️ おしゃべり冷蔵庫
+# 🍽️ TalkFridge
 
-音声で食材を登録、AI でレシピ提案する冷蔵庫管理アプリ
+音声で食材を登録、AI でレシピ提案する冷蔵庫管理アプリ（PWA版）
+
+**バージョン：** `1.0.1` (2025-10-29)  
+**最新の変更：** [CHANGELOG.md](./CHANGELOG.md) を参照
 
 ## 📂 ファイル構成
 
 ```
 food_reminder_app/
-├── oshaberi_web_app.py    # メインのWebアプリ（起動ファイル）
-├── ingredients_database.py # データベース管理
-├── requirements.txt        # 依存関係
+├── public/                # PWA版（Vercelデプロイ用）
+│   ├── index.html        # メインHTML（PWA版）
+│   ├── indexdb-store.js  # IndexedDBストア
+│   └── parse-utils.js    # 音声解析ユーティリティ
+├── oshaberi_web_app.py    # メインのWebアプリ（旧版、未使用）
+├── ingredients_database.py # データベース管理（旧版、未使用）
+├── requirements.txt        # 依存関係（旧版、未使用）
 ├── .env.example           # 環境変数のテンプレート
-├── templates/
-│   └── oshaberi.html      # フロントエンドUI
-└── README_OSHABERI.md     # 詳細な使い方
+├── vercel.json            # Vercel設定ファイル
+├── VERSION                # 現在のバージョン番号
+├── CHANGELOG.md           # 更新履歴
+└── README.md              # このファイル
 
 ```
 
+**注意：** 現在は完全PWA版（`public/`ディレクトリ）をVercelでデプロイしています。旧版のFlaskアプリ（`oshaberi_web_app.py`）は使用していません。
+
 ---
 
-## 🚀 起動方法
+## 🚀 デプロイ状況
+
+**本番環境：** Vercelで自動デプロイ  
+**URL：** https://talkfridge.vercel.app （例）
+
+詳細は [Vercelダッシュボード](https://vercel.com/dashboard) で確認できます。
+
+---
+
+## 🚀 ローカル開発（旧版、参考用）
 
 ### 1. 環境変数の設定
 
@@ -84,11 +103,19 @@ http://localhost:5001
 
 ## 💡 特徴
 
-- 📱 **音声入力**: マイクボタンを押すだけ
-- 🤖 **AI レシピ提案**: Gemini API 使用
-- 📦 **在庫管理**: 数量・賞味期限を管理
-- 🗓️ **賞味期限管理**: 期限切れ間近を通知
-- 💰 **無料**: Gemini API 無料枠で運用
+### PWA版の特徴
+- 📱 **PWA対応**: オフライン利用可能、スマホにインストール可能
+- 🎤 **音声入力**: 連続食材名の分割・商品名自動認識
+- 🤖 **AI レシピ提案**: Gemini API 使用（クライアント側から直接呼び出し）
+- 📦 **在庫管理**: IndexedDBでローカル保存
+- 💾 **データ保存**: ブラウザのIndexedDBに保存（サーバー不要）
+- 💰 **完全無料**: Vercel無料プラン + Gemini API無料枠
+
+### 技術スタック
+- **フロントエンド**: HTML/CSS/JavaScript (PWA)
+- **データベース**: IndexedDB（ブラウザ内蔵）
+- **デプロイ**: Vercel（無料）
+- **AI**: Google Gemini API（無料枠）
 
 ---
 
