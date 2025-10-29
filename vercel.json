@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "buildCommand": "mkdir -p public && cp templates/oshaberi.html public/index.html",
+  "buildCommand": "echo 'Static site - no build needed'",
   "outputDirectory": "public",
-  "routes": [
+  "rewrites": [
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
