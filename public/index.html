@@ -248,6 +248,22 @@
                     <div id="stats" class="tab-pane">
                         <h4 class="mb-3">食べた歴史</h4>
                         <div id="stats-container"></div>
+                        
+                        <!-- データ管理 -->
+                        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #E0E0E0;">
+                            <h5 class="mb-3">📦 データ管理</h5>
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                <button class="btn btn-sm" style="background: #4A90E2; color: white; border: none; padding: 8px 15px;" onclick="exportData()">
+                                    💾 データをエクスポート（バックアップ）
+                                </button>
+                                <button class="btn btn-sm" style="background: #50C878; color: white; border: none; padding: 8px 15px;" onclick="importData()">
+                                    📥 データをインポート（復元）
+                                </button>
+                                <p style="font-size: 0.85em; color: #666; margin-top: 10px;">
+                                    💡 ブラウザのデータを削除すると食材情報が消えます。定期的にバックアップを取ることをお勧めします。
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
