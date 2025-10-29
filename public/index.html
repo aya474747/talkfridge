@@ -789,6 +789,89 @@
             document.getElementById('version-info').title = `v${buildInfo.version} | ビルド日: ${buildInfo.date} | コミット: ${buildInfo.commitHash} | 環境: ${buildInfo.env}`;
         }
         
+        // データをエクスポート（バックアップ）
+        async function exportData() {
+            try {
+                const data = await exportAllData();
+                const json = JSON.stringify(data, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `talkfridge-backup-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                alert('✅ データをエクスポートしました！\n\nファイル名: ' + a.download);
+            } catch (error) {
+                console.error('エクスポートエラー:', error);
+                alert('❌ エクスポートに失敗しました: ' + error.message);
+            }
+        }
+        
+        // データをインポート（復元）
+        async function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                try {
+                    const text = await file.text();
+                    const data = JSON.parse(text);
+                    
+                    if (!data.ingredients) {
+                        alert('❌ 無効なバックアップファイルです');
+                        return;
+                    }
+                    
+                    const confirmMessage = `以下のデータをインポートしますか？\n\n食材: ${data.ingredients.length}個\nレシピ履歴: ${data.recipeHistory ? data.recipeHistory.length : 0}個\n使用履歴: ${data.usageHistory ? data.usageHistory.length : 0}個\n\n※ 既存のデータとマージされます（上書きではありません）`;
+                    
+                    if (!confirm(confirmMessage)) {
+                        return;
+                    }
+                    
+                    const result = await importDataToDB(data);
+                    
+                    if (result.success) {
+                        alert(`✅ データをインポートしました！\n\n食材: ${data.ingredients.length}個を追加しました`);
+                        loadIngredients();
+                    } else {
+                        alert('❌ インポートに失敗しました: ' + (result.error || '不明なエラー'));
+                    }
+                } catch (error) {
+                    console.error('インポートエラー:', error);
+                    alert('❌ ファイルの読み込みに失敗しました: ' + error.message);
+                }
+            };
+            
+            input.click();
+        }
+        
+        // IndexedDBにデータをインポート
+        async function importDataToDB(data) {
+            try {
+                if (data.ingredients && data.ingredients.length > 0) {
+                    // 食材を追加（マージ）
+                    for (const ing of data.ingredients) {
+                        try {
+                            await addIngredient(ing);
+                        } catch (error) {
+                            console.warn('食材インポートエラー:', ing.name, error);
+                            // エラーが発生しても続行
+                        }
+                    }
+                }
+                return { success: true };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+        
         // ページ読み込み時
         document.addEventListener('DOMContentLoaded', function() {
             loadIngredients();
