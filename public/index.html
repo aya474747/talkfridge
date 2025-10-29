@@ -263,7 +263,7 @@
 
     <!-- バージョン情報 -->
     <div id="version-info" style="position: fixed; bottom: 10px; right: 10px; font-size: 0.7em; color: #999; background: rgba(255,255,255,0.8); padding: 4px 8px; border-radius: 4px; z-index: 1000; cursor: pointer; transition: opacity 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="showVersionDetails()" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-        v<span id="version-number">1.0.1</span>
+        v<span id="version-number">1.0.2</span>
     </div>
 
     <!-- マイクボタン -->
@@ -737,14 +737,14 @@
         // バージョン情報を表示
         function showVersionDetails() {
             const versionInfo = {
-                version: '1.0.1',
+                version: '1.0.2',
                 buildDate: '2025-10-29',
-                commitHash: '100f479',
-                updateNote: '連続音声入力の細かい分割と商品名認識を強化',
+                commitHash: 'b8592d3',
+                updateNote: '連続食材名の分割と商品名分割の問題を解決',
                 features: [
                     'PWA対応（オフライン利用可能）',
                     'IndexedDBでデータ保存',
-                    '音声入力対応（連続入力改善）',
+                    '音声入力対応（連続入力・商品名認識改善）',
                     'Gemini APIでレシピ提案',
                     '商品名自動認識（プチっと鍋など）'
                 ]
@@ -756,9 +756,9 @@
         // バージョン情報を更新（ビルド時に自動更新）
         function updateVersionInfo() {
             const buildInfo = {
-                version: '1.0.1',
+                version: '1.0.2',
                 date: new Date().toLocaleDateString('ja-JP'),
-                commitHash: '100f479',
+                commitHash: 'b8592d3',
                 env: window.location.hostname === 'localhost' ? '開発' : '本番'
             };
             

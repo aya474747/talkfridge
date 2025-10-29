@@ -1,8 +1,8 @@
 # 🍽️ TalkFridge
 
-音声で食材を登録、AI でレシピ提案する冷蔵庫管理アプリ（PWA版）
+音声で食材を登録、AI でレシピ提案する冷蔵庫管理アプリ（PWA 版）
 
-**バージョン：** `1.0.1` (2025-10-29)  
+**バージョン：** `1.0.2` (2025-10-29)  
 **最新の変更：** [CHANGELOG.md](./CHANGELOG.md) を参照
 
 ## 📂 ファイル構成
@@ -24,16 +24,16 @@ food_reminder_app/
 
 ```
 
-**注意：** 現在は完全PWA版（`public/`ディレクトリ）をVercelでデプロイしています。旧版のFlaskアプリ（`oshaberi_web_app.py`）は使用していません。
+**注意：** 現在は完全 PWA 版（`public/`ディレクトリ）を Vercel でデプロイしています。旧版の Flask アプリ（`oshaberi_web_app.py`）は使用していません。
 
 ---
 
 ## 🚀 デプロイ状況
 
-**本番環境：** Vercelで自動デプロイ  
+**本番環境：** Vercel で自動デプロイ  
 **URL：** https://talkfridge.vercel.app （例）
 
-詳細は [Vercelダッシュボード](https://vercel.com/dashboard) で確認できます。
+詳細は [Vercel ダッシュボード](https://vercel.com/dashboard) で確認できます。
 
 ---
 
@@ -103,15 +103,17 @@ http://localhost:5001
 
 ## 💡 特徴
 
-### PWA版の特徴
-- 📱 **PWA対応**: オフライン利用可能、スマホにインストール可能
+### PWA 版の特徴
+
+- 📱 **PWA 対応**: オフライン利用可能、スマホにインストール可能
 - 🎤 **音声入力**: 連続食材名の分割・商品名自動認識
 - 🤖 **AI レシピ提案**: Gemini API 使用（クライアント側から直接呼び出し）
-- 📦 **在庫管理**: IndexedDBでローカル保存
-- 💾 **データ保存**: ブラウザのIndexedDBに保存（サーバー不要）
-- 💰 **完全無料**: Vercel無料プラン + Gemini API無料枠
+- 📦 **在庫管理**: IndexedDB でローカル保存
+- 💾 **データ保存**: ブラウザの IndexedDB に保存（サーバー不要）
+- 💰 **完全無料**: Vercel 無料プラン + Gemini API 無料枠
 
 ### 技術スタック
+
 - **フロントエンド**: HTML/CSS/JavaScript (PWA)
 - **データベース**: IndexedDB（ブラウザ内蔵）
 - **デプロイ**: Vercel（無料）
