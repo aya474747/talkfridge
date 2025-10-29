@@ -85,12 +85,21 @@ async function addIngredient(ingredient) {
         
         const request = store.add(data);
         
-        request.onsuccess = () => {
-            // 使用履歴に記録
-            addUsageHistory(data.name, 'add', data.quantity);
+        request.onsuccess = async () => {
+            // 使用履歴に記録（エラーが発生しても続行）
+            try {
+                await addUsageHistory(data.name, 'add', data.quantity);
+            } catch (historyError) {
+                console.warn('使用履歴の記録でエラー:', historyError);
+                // 履歴の記録に失敗しても、食材追加は成功とする
+            }
+            console.log('✅ 食材を追加:', data.name, data.quantity, data.unit);
             resolve({ success: true });
         };
-        request.onerror = () => reject(request.error);
+        request.onerror = () => {
+            console.error('❌ 食材追加エラー:', request.error);
+            reject(request.error);
+        };
     });
 }
 
@@ -98,9 +107,34 @@ async function addIngredient(ingredient) {
 async function addIngredients(ingredients) {
     if (!db) await initDB();
     
-    const promises = ingredients.map(ing => addIngredient(ing));
-    await Promise.all(promises);
-    return { success: true };
+    console.log('📦 複数食材追加開始:', ingredients.length, '個');
+    
+    // すべての食材を追加（エラーが発生しても可能な限り続行）
+    const results = [];
+    for (let i = 0; i < ingredients.length; i++) {
+        const ing = ingredients[i];
+        try {
+            console.log(`📝 [${i + 1}/${ingredients.length}] 追加中:`, ing.name);
+            const result = await addIngredient(ing);
+            results.push({ success: true, ingredient: ing, result });
+        } catch (error) {
+            console.error(`❌ [${i + 1}/${ingredients.length}] 追加失敗:`, ing.name, error);
+            results.push({ success: false, ingredient: ing, error: error.message });
+            // エラーが発生しても続行
+        }
+    }
+    
+    const successCount = results.filter(r => r.success).length;
+    const failCount = results.filter(r => !r.success).length;
+    
+    console.log(`✅ 追加完了: 成功 ${successCount}個, 失敗 ${failCount}個`);
+    
+    return { 
+        success: successCount > 0, 
+        added: successCount,
+        failed: failCount,
+        results: results
+    };
 }
 
 // 食材を使用（数量を減らす）

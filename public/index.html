@@ -346,15 +346,28 @@
                         // 抽出結果を表示
                         const ingredientNames = parseData.ingredients.map(ing => `${ing.name} ${ing.quantity}${ing.unit}`).join(', ');
                         console.log('✅ 登録予定の食材:', ingredientNames);
+                        console.log('📊 登録予定の食材数:', parseData.ingredients.length);
                         
                         // IndexedDBに保存
+                        console.log('💾 IndexedDBに保存開始...');
                         const addResult = await addIngredients(parseData.ingredients);
+                        console.log('💾 保存結果:', addResult);
                         
                         if (addResult.success) {
-                            alert(`✅ 食材を追加しました！\n\n${ingredientNames}`);
+                            const successNames = addResult.results
+                                .filter(r => r.success)
+                                .map(r => `${r.ingredient.name} ${r.ingredient.quantity}${r.ingredient.unit}`)
+                                .join(', ');
+                            
+                            let message = `✅ 食材を追加しました！\n\n${successNames}`;
+                            if (addResult.failed > 0) {
+                                message += `\n\n⚠️ ${addResult.failed}個の食材の追加に失敗しました`;
+                            }
+                            
+                            alert(message);
                             loadIngredients();
                         } else {
-                            alert('❌ エラー: ' + (addResult.error || '不明なエラー'));
+                            alert(`❌ エラー: ${addResult.failed}個すべての食材の追加に失敗しました`);
                         }
                     } else {
                         console.error('❌ 抽出できなかった食材:', parseData.debug);
