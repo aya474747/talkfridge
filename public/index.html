@@ -261,6 +261,11 @@
         </div>
     </div>
 
+    <!-- バージョン情報 -->
+    <div id="version-info" style="position: fixed; bottom: 10px; right: 10px; font-size: 0.7em; color: #999; background: rgba(255,255,255,0.8); padding: 4px 8px; border-radius: 4px; z-index: 1000; cursor: pointer; transition: opacity 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="showVersionDetails()" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+        v<span id="version-number">1.0.1</span>
+    </div>
+
     <!-- マイクボタン -->
     <button class="btn btn-mic" onclick="startVoiceInput()" id="micButton">
         <i class="fas fa-microphone"></i>
@@ -729,10 +734,43 @@
             }
         }
 
+        // バージョン情報を表示
+        function showVersionDetails() {
+            const versionInfo = {
+                version: '1.0.1',
+                buildDate: '2025-10-29',
+                commitHash: '100f479',
+                updateNote: '連続音声入力の細かい分割と商品名認識を強化',
+                features: [
+                    'PWA対応（オフライン利用可能）',
+                    'IndexedDBでデータ保存',
+                    '音声入力対応（連続入力改善）',
+                    'Gemini APIでレシピ提案',
+                    '商品名自動認識（プチっと鍋など）'
+                ]
+            };
+            
+            alert(`📱 TalkFridge\n\nバージョン: ${versionInfo.version}\nビルド日: ${versionInfo.buildDate}\nコミット: ${versionInfo.commitHash}\n\n最新の更新:\n${versionInfo.updateNote}\n\n主な機能:\n${versionInfo.features.map(f => '• ' + f).join('\n')}`);
+        }
+        
+        // バージョン情報を更新（ビルド時に自動更新）
+        function updateVersionInfo() {
+            const buildInfo = {
+                version: '1.0.1',
+                date: new Date().toLocaleDateString('ja-JP'),
+                commitHash: '100f479',
+                env: window.location.hostname === 'localhost' ? '開発' : '本番'
+            };
+            
+            document.getElementById('version-number').textContent = buildInfo.version;
+            document.getElementById('version-info').title = `v${buildInfo.version} | ビルド日: ${buildInfo.date} | コミット: ${buildInfo.commitHash} | 環境: ${buildInfo.env}`;
+        }
+        
         // ページ読み込み時
         document.addEventListener('DOMContentLoaded', function() {
             loadIngredients();
             loadQuota();
+            updateVersionInfo();
             setInterval(loadQuota, 30000);
         });
     </script>
