@@ -107,15 +107,33 @@ async function addIngredient(ingredient) {
 async function addIngredients(ingredients) {
     if (!db) await initDB();
     
-    console.log('📦 複数食材追加開始:', ingredients.length, '個');
+    console.log('📦 複数食材追加開始');
+    console.log('📦 受け取った食材配列:', ingredients);
+    console.log('📦 配列の長さ:', ingredients.length);
+    console.log('📦 配列の内容:', JSON.stringify(ingredients, null, 2));
+    
+    // 配列が空または不正な場合はエラー
+    if (!Array.isArray(ingredients) || ingredients.length === 0) {
+        console.error('❌ 不正な食材配列:', ingredients);
+        return { success: false, added: 0, failed: 0, results: [], error: '不正な食材配列' };
+    }
     
     // すべての食材を追加（エラーが発生しても可能な限り続行）
     const results = [];
     for (let i = 0; i < ingredients.length; i++) {
         const ing = ingredients[i];
+        console.log(`📝 [${i + 1}/${ingredients.length}] 処理開始:`, ing);
+        
+        if (!ing || !ing.name) {
+            console.error(`❌ [${i + 1}/${ingredients.length}] 不正な食材データ:`, ing);
+            results.push({ success: false, ingredient: ing, error: '不正な食材データ' });
+            continue;
+        }
+        
         try {
-            console.log(`📝 [${i + 1}/${ingredients.length}] 追加中:`, ing.name);
+            console.log(`📝 [${i + 1}/${ingredients.length}] 追加中: ${ing.name} ${ing.quantity}${ing.unit}`);
             const result = await addIngredient(ing);
+            console.log(`✅ [${i + 1}/${ingredients.length}] 追加成功: ${ing.name}`);
             results.push({ success: true, ingredient: ing, result });
         } catch (error) {
             console.error(`❌ [${i + 1}/${ingredients.length}] 追加失敗:`, ing.name, error);
@@ -128,6 +146,7 @@ async function addIngredients(ingredients) {
     const failCount = results.filter(r => !r.success).length;
     
     console.log(`✅ 追加完了: 成功 ${successCount}個, 失敗 ${failCount}個`);
+    console.log(`📊 結果詳細:`, results);
     
     return { 
         success: successCount > 0, 

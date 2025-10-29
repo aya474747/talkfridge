@@ -263,7 +263,7 @@
 
     <!-- バージョン情報 -->
     <div id="version-info" style="position: fixed; bottom: 10px; right: 10px; font-size: 0.7em; color: #999; background: rgba(255,255,255,0.8); padding: 4px 8px; border-radius: 4px; z-index: 1000; cursor: pointer; transition: opacity 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="showVersionDetails()" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-        v<span id="version-number">1.0.2</span>
+        v<span id="version-number">1.0.3</span>
     </div>
 
     <!-- マイクボタン -->
@@ -347,11 +347,15 @@
                         const ingredientNames = parseData.ingredients.map(ing => `${ing.name} ${ing.quantity}${ing.unit}`).join(', ');
                         console.log('✅ 登録予定の食材:', ingredientNames);
                         console.log('📊 登録予定の食材数:', parseData.ingredients.length);
+                        console.log('📋 登録予定の食材詳細:', JSON.stringify(parseData.ingredients, null, 2));
                         
                         // IndexedDBに保存
                         console.log('💾 IndexedDBに保存開始...');
+                        console.log('💾 保存する食材配列の長さ:', parseData.ingredients.length);
+                        
                         const addResult = await addIngredients(parseData.ingredients);
                         console.log('💾 保存結果:', addResult);
+                        console.log('💾 成功数:', addResult.added, '失敗数:', addResult.failed);
                         
                         if (addResult.success) {
                             const successNames = addResult.results
@@ -756,10 +760,10 @@
         // バージョン情報を表示
         function showVersionDetails() {
             const versionInfo = {
-                version: '1.0.2',
+                version: '1.0.3',
                 buildDate: '2025-10-29',
-                commitHash: 'b8592d3',
-                updateNote: '連続食材名の分割と商品名分割の問題を解決',
+                commitHash: '3d36093',
+                updateNote: '複数食材登録処理を改善・デバッグログ強化',
                 features: [
                     'PWA対応（オフライン利用可能）',
                     'IndexedDBでデータ保存',
@@ -775,9 +779,9 @@
         // バージョン情報を更新（ビルド時に自動更新）
         function updateVersionInfo() {
             const buildInfo = {
-                version: '1.0.2',
+                version: '1.0.3',
                 date: new Date().toLocaleDateString('ja-JP'),
-                commitHash: 'b8592d3',
+                commitHash: '3d36093',
                 env: window.location.hostname === 'localhost' ? '開発' : '本番'
             };
             
