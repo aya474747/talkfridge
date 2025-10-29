@@ -9,4 +9,3 @@ services:
         value: 3.11.7
       - key: FLASK_ENV
         value: production
-

@@ -37,8 +37,16 @@ else:
     gemini_model = None
     print("ℹ️ GEMINI_API_KEYが設定されていません。レシピ提案機能は使用できません。")
 
-# データベース初期化
-db = IngredientsDatabase()
+# データベース初期化（エラーハンドリング付き）
+try:
+    db = IngredientsDatabase()
+    print(f"✅ データベース初期化成功: {db.db_path}")
+except Exception as e:
+    print(f"⚠️ データベース初期化エラー: {e}")
+    import traceback
+    traceback.print_exc()
+    # エラーが発生してもアプリは起動させる（データベース機能は使えないが）
+    db = None
 
 # カテゴリ推測のキーワード
 CATEGORY_KEYWORDS = {

@@ -1,2 +1,2 @@
-web: gunicorn --chdir . oshaberi_web_app:app --bind 0.0.0.0:$PORT --timeout 120
+web: gunicorn oshaberi_web_app:app --bind 0.0.0.0:$PORT --timeout 120 --workers 1 --threads 2
 

@@ -9,7 +9,14 @@ from datetime import datetime, date, timedelta
 from pathlib import Path
 
 class IngredientsDatabase:
-    def __init__(self, db_path="oshaberi_reizoko.db"):
+    def __init__(self, db_path=None):
+        # Renderなどの本番環境では、書き込み可能なディレクトリを使用
+        if db_path is None:
+            import os
+            # 環境変数で指定されていない場合は、カレントディレクトリまたは一時ディレクトリを使用
+            data_dir = os.environ.get('DATA_DIR', os.getcwd())
+            os.makedirs(data_dir, exist_ok=True)
+            db_path = os.path.join(data_dir, "oshaberi_reizoko.db")
         self.db_path = db_path
         self.init_database()
     
