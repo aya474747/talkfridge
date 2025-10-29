@@ -267,11 +267,42 @@
     </button>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- PWA用スクリプト -->
+    <script src="indexdb-store.js"></script>
+    <script src="parse-utils.js"></script>
+    <!-- Gemini API (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/@google/generative-ai@0.21.0/dist/index.umd.js"></script>
     <script>
-        // API URLを設定（環境変数から取得、または直接指定）
-        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? 'http://localhost:5001'  // ローカル開発時
-            : 'https://talkfridge-api.onrender.com';  // 本番環境（Render APIのURL）
+        // Gemini APIキー（設定画面で変更可能にする）
+        let GEMINI_API_KEY = localStorage.getItem('GEMINI_API_KEY') || '';
+        let geminiModel = null;
+        
+        // Gemini APIを初期化
+        function initGeminiAPI() {
+            if (!GEMINI_API_KEY) {
+                console.log('ℹ️ Gemini APIキーが設定されていません');
+                return false;
+            }
+            
+            try {
+                const genai = new window.GoogleGenerativeAI(GEMINI_API_KEY);
+                // 最新のモデルを試行（フォールバックあり）
+                try {
+                    geminiModel = genai.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+                } catch {
+                    try {
+                        geminiModel = genai.getGenerativeModel({ model: 'gemini-pro' });
+                    } catch {
+                        geminiModel = genai.getGenerativeModel({ model: 'models/gemini-pro' });
+                    }
+                }
+                console.log('✅ Gemini API初期化成功');
+                return true;
+            } catch (error) {
+                console.error('⚠️ Gemini API初期化エラー:', error);
+                return false;
+            }
+        }
         
         let recognition = null;
         let isListening = false;
@@ -298,31 +329,21 @@
                 console.log('📝 認識結果:', text);
                 
                 try {
-                    const parseResponse = await fetch(`${API_URL}/api/parse-ingredients`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({text: text})
-                    });
-                    
-                    const parseData = await parseResponse.json();
+                    // クライアント側で解析
+                    const parseData = parseIngredients(text);
                     
                     console.log('🔍 抽出結果:', parseData);
                     console.log('📝 デバッグ情報:', parseData.debug);
                     
                     if (parseData.success && parseData.ingredients.length > 0) {
-                        const addResponse = await fetch(`${API_URL}/api/add-ingredients`, {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({ingredients: parseData.ingredients})
-                        });
+                        // IndexedDBに保存
+                        const addResult = await addIngredients(parseData.ingredients);
                         
-                        const addData = await addResponse.json();
-                        
-                        if (addData.success) {
+                        if (addResult.success) {
                             alert('✅ 食材を追加しました！');
                             loadIngredients();
                         } else {
-                            alert('❌ エラー: ' + (addData.error || '不明なエラー'));
+                            alert('❌ エラー: ' + (addResult.error || '不明なエラー'));
                         }
                     } else {
                         console.error('❌ 抽出できなかった食材:', parseData.debug);
@@ -424,28 +445,18 @@
         // テキスト入力を処理
         async function processTextInput(text) {
             try {
-                const parseResponse = await fetch('/api/parse-ingredients', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({text: text})
-                });
-                
-                const parseData = await parseResponse.json();
+                // クライアント側で解析
+                const parseData = parseIngredients(text);
                 
                 if (parseData.success && parseData.ingredients.length > 0) {
-                    const addResponse = await fetch('/api/add-ingredients', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ingredients: parseData.ingredients})
-                    });
+                    // IndexedDBに保存
+                    const addResult = await addIngredients(parseData.ingredients);
                     
-                    const addData = await addResponse.json();
-                    
-                    if (addData.success) {
+                    if (addResult.success) {
                         alert('✅ 食材を追加しました！');
                         loadIngredients();
                     } else {
-                        alert('❌ エラー: ' + (addData.error || '不明なエラー'));
+                        alert('❌ エラー: ' + (addResult.error || '不明なエラー'));
                     }
                 } else {
                     alert(`⚠️ 食材情報を抽出できませんでした。\n入力されたテキスト: "${text}"\nこの形式で入力してください: "鶏肉2枚、トマト3個"`);
@@ -470,24 +481,7 @@
         // 食材一覧を読み込み
         async function loadIngredients() {
             try {
-                const response = await fetch(`${API_URL}/api/get-ingredients`);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const text = await response.text();
-                if (!text) {
-                    console.error('空のレスポンス');
-                    document.getElementById('ingredients-container').innerHTML = `
-                        <div class="alert alert-danger">
-                            <i class="fas fa-exclamation-triangle"></i> サーバーが応答していません。アプリを起動してください。
-                        </div>
-                    `;
-                    return;
-                }
-                
-                const data = JSON.parse(text);
+                const data = await getIngredients();
                 
                 const container = document.getElementById('ingredients-container');
                 
@@ -611,31 +605,9 @@
         // 食材名のみ保存
         async function saveNameOnly(ingredientId, newName, reloadAfterSave = true) {
             try {
-                const response = await fetch(`${API_URL}/api/get-ingredients`);
-                const data = await response.json();
-                const ingredient = data.ingredients.find(i => i.id == ingredientId);
+                const result = await updateIngredient(parseInt(ingredientId), { name: newName });
                 
-                if (!ingredient) {
-                    console.error('食材が見つかりません');
-                    return;
-                }
-                
-                const updateResponse = await fetch(`${API_URL}/api/update-ingredient`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        ingredient_id: parseInt(ingredientId),
-                        name: newName,
-                        quantity: ingredient.quantity,
-                        unit: ingredient.unit,
-                        category: ingredient.category,
-                        expiry_date: ingredient.expiry_date
-                    })
-                });
-                
-                const updateData = await updateResponse.json();
-                
-                if (updateData.success) {
+                if (result.success) {
                     console.log('✅ 食材名を更新しました');
                     if (reloadAfterSave) {
                         loadIngredients();
@@ -649,31 +621,15 @@
         // 数量のみ保存
         async function saveQuantityFromInput(ingredientId, newQuantity) {
             try {
-                const response = await fetch(`${API_URL}/api/get-ingredients`);
-                const data = await response.json();
-                const ingredient = data.ingredients.find(i => i.id == ingredientId);
-                
-                if (!ingredient) {
-                    console.error('食材が見つかりません');
+                const quantity = parseFloat(newQuantity);
+                if (isNaN(quantity) || quantity < 0) {
+                    console.error('無効な数量');
                     return;
                 }
                 
-                const updateResponse = await fetch(`${API_URL}/api/update-ingredient`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        ingredient_id: parseInt(ingredientId),
-                        name: ingredient.name,
-                        quantity: parseFloat(newQuantity),
-                        unit: ingredient.unit,
-                        category: ingredient.category,
-                        expiry_date: ingredient.expiry_date
-                    })
-                });
+                const result = await updateIngredient(parseInt(ingredientId), { quantity: quantity });
                 
-                const updateData = await updateResponse.json();
-                
-                if (updateData.success) {
+                if (result.success) {
                     console.log('✅ 数量を更新しました');
                 }
             } catch (error) {
@@ -684,62 +640,77 @@
         // 食材を使用
         async function useIngredient(ingredientId, quantity) {
             try {
-                const response = await fetch(`${API_URL}/api/use-ingredient`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ingredient_id: ingredientId, quantity: quantity})
-                });
+                const result = await useIngredientDB(ingredientId, quantity);
                 
-                const data = await response.json();
-                
-                if (data.success) {
+                if (result.success) {
                     loadIngredients();
                 } else {
-                    alert('❌ エラー: ' + data.error);
+                    alert('❌ エラー: ' + (result.error || '不明なエラー'));
                 }
             } catch (error) {
                 console.error('エラー:', error);
+                alert('❌ エラーが発生しました: ' + error.message);
             }
         }
 
         // レシピ提案
         async function suggestRecipe() {
             try {
-                const ingredientsResponse = await fetch('/api/get-ingredients');
-                const ingredientsData = await ingredientsResponse.json();
+                const data = await getIngredients();
                 
-                if (!ingredientsData.ingredients || ingredientsData.ingredients.length === 0) {
+                if (!data.ingredients || data.ingredients.length === 0) {
                     alert('⚠️ 食材がありません');
                     return;
                 }
                 
-                const recipeResponse = await fetch(`${API_URL}/api/suggest-recipe`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ingredients: ingredientsData.ingredients})
-                });
-                
-                const recipeData = await recipeResponse.json();
-                
-                if (recipeData.success) {
-                    document.getElementById('recipe-container').innerHTML = `
-                        <div class="recipe-card">
-                            <pre style="white-space: pre-wrap; color: #333;">${recipeData.recipe}</pre>
-                        </div>
-                    `;
-                    loadQuota();
-                } else if (recipeData.recipe) {
-                    document.getElementById('recipe-container').innerHTML = `
-                        <div class="recipe-card">
-                            <pre style="white-space: pre-wrap; color: #333;">${recipeData.recipe}</pre>
-                        </div>
-                    `;
-                } else {
-                    alert('❌ エラー: ' + (recipeData.error || '不明なエラー'));
+                // Gemini APIを初期化
+                if (!geminiModel) {
+                    if (!GEMINI_API_KEY) {
+                        const apiKey = prompt('Gemini APIキーを入力してください（初回のみ）:');
+                        if (apiKey && apiKey.trim()) {
+                            GEMINI_API_KEY = apiKey.trim();
+                            localStorage.setItem('GEMINI_API_KEY', GEMINI_API_KEY);
+                            initGeminiAPI();
+                        } else {
+                            alert('⚠️ Gemini APIキーが必要です');
+                            return;
+                        }
+                    } else {
+                        initGeminiAPI();
+                    }
                 }
+                
+                if (!geminiModel) {
+                    alert('⚠️ Gemini APIの初期化に失敗しました');
+                    return;
+                }
+                
+                // 食材リストをテキストに変換
+                const ingredientText = data.ingredients.map(ing => 
+                    `${ing.name} ${ing.quantity}${ing.unit}`
+                ).join(', ');
+                
+                const prompt = `以下の食材を使って、簡単で美味しいレシピを1つ提案してください。\n食材: ${ingredientText}\n\n手順も含めて教えてください。`;
+                
+                const result = await geminiModel.generateContent(prompt);
+                const response = await result.response;
+                const recipe = response.text();
+                
+                // レシピ履歴に保存
+                await addRecipeHistory(recipe, data.ingredients);
+                
+                document.getElementById('recipe-container').innerHTML = `
+                    <div class="recipe-card">
+                        <pre style="white-space: pre-wrap; color: #333;">${escapeHtml(recipe)}</pre>
+                    </div>
+                `;
+                
+                // 使用量表示を更新（PWAでは不要だが、互換性のため）
+                document.getElementById('quota-text').textContent = '📊 レシピを生成しました（Gemini API使用）';
+                
             } catch (error) {
                 console.error('エラー:', error);
-                alert('❌ エラーが発生しました');
+                alert('❌ エラーが発生しました: ' + error.message);
             }
         }
 
@@ -748,23 +719,11 @@
             // タブが切り替わった時に実行される
         }
 
-        // クォータ情報を読み込み
+        // クォータ情報を読み込み（PWA版では簡易表示）
         async function loadQuota() {
             try {
-                const response = await fetch(`${API_URL}/api/get-quota`);
-                const data = await response.json();
-                
                 const quotaText = document.getElementById('quota-text');
-                if (data.daily_remaining !== undefined) {
-                    const dailyPercent = Math.round((data.daily_remaining / data.daily_limit) * 100);
-                    const monthlyPercent = Math.round((data.monthly_remaining / data.monthly_limit) * 100);
-                    
-                    quotaText.innerHTML = `
-                        📊 API残り使用量: 今日<span style="color: ${data.daily_remaining > 30 ? '#4A90E2' : '#FFB6C1'}; font-weight: bold;">${data.daily_remaining}回</span> | 今月<span style="color: ${data.monthly_remaining > 500 ? '#4A90E2' : '#FFB6C1'}; font-weight: bold;">${data.monthly_remaining}回</span>
-                    `;
-                } else {
-                    quotaText.textContent = '📊 クォータ情報を取得できませんでした';
-                }
+                quotaText.textContent = '📊 データはローカルに保存されます（Gemini API使用時のみAPIキーが必要）';
             } catch (error) {
                 console.error('クォータ読み込みエラー:', error);
             }
