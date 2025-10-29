@@ -156,19 +156,26 @@ function splitIntoFoodItems(text) {
     console.log('🔍 最初の分割結果:', parts);
     console.log('🔍 分割パート数:', parts.length);
     
-    // もし分割されない場合（区切り文字がない）、商品名辞書で直接チェック
+    // もし分割されない場合（区切り文字がない）、スペースで再度分割を試みる
     if (parts.length === 1) {
         const singlePart = parts[0];
-        // 商品名辞書に完全一致するものがあるか
-        const matchedFood = findFoodNameInText(singlePart);
-        if (matchedFood && matchedFood !== singlePart) {
-            // 商品名が見つかったが、完全一致ではない場合は分割が必要
-            // 例：「プチっと鍋とチキン」のような場合
-            // ここでは一旦そのまま返す（次の処理で対応）
-            console.log('📌 単一パート、商品名部分一致:', matchedFood);
-        } else if (matchedFood === singlePart) {
-            // 完全一致
-            return [singlePart];
+        
+        // スペースで再度分割を試みる（音声認識が区切り文字を使わない場合）
+        const spaceSplitParts = singlePart.split(/\s+/).map(p => p.trim()).filter(p => p && p.length > 0);
+        if (spaceSplitParts.length > 1) {
+            console.log('📌 スペースで再分割:', spaceSplitParts);
+            parts = spaceSplitParts;
+        } else {
+            // 商品名辞書に完全一致するものがあるか
+            const matchedFood = findFoodNameInText(singlePart);
+            if (matchedFood && matchedFood !== singlePart) {
+                // 商品名が見つかったが、完全一致ではない場合は分割が必要
+                console.log('📌 単一パート、商品名部分一致:', matchedFood);
+            } else if (matchedFood === singlePart) {
+                // 完全一致
+                console.log('✅ 完全一致の商品名:', matchedFood);
+                return [singlePart];
+            }
         }
     }
     
