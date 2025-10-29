@@ -1,0 +1,16 @@
+*.py
+*.db
+*.log
+*.pyc
+__pycache__/
+venv/
+env/
+.env
+requirements.txt
+Procfile
+render.yaml
+fly.toml
+Dockerfile
+*.md
+api_usage.json
+

@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalkFridge</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', 'Space Grotesk', sans-serif;
+            letter-spacing: -0.01em;
+        }
+        
+        body {
+            background: #E8E8E8;
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            font-weight: 400;
+        }
+        .main-container {
+            background: #F5F5F5;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            max-width: 600px;
+            border: 1px solid #D0D0D0;
+        }
+        .header {
+            background: linear-gradient(135deg, #CCCCCC 0%, #D8D8D8 100%);
+            color: #333;
+            padding: 25px;
+            border-radius: 15px 15px 0 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            border-bottom: 2px solid #B0B0B0;
+        }
+        
+        /* 顔のデザイン */
+        .face-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .eyes-container {
+            display: flex;
+            align-items: center;
+            gap: 80px;
+        }
+        @media (max-width: 768px) {
+            .eyes-container {
+                gap: 80px;
+            }
+        }
+        .eye {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .eye .pupil {
+            position: absolute;
+            top: 10px;
+            left: 13px;
+            width: 10px;
+            height: 10px;
+            background: #333;
+            border-radius: 50%;
+        }
+        .mouth {
+            width: 30px;
+            height: 16px;
+            background: #FF6B6B;
+            border-radius: 30px 30px 0 0;
+            transform: rotate(180deg);
+        }
+        .app-title {
+            font-size: 0.9em;
+            color: #666;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+        
+        .ingredient-card {
+            background: #FEFEFE;
+            border-radius: 4px;
+            margin: 4px 0;
+            padding: 10px 12px;
+            transition: all 0.2s ease;
+            border: 1px solid #E0E0E0;
+        }
+        .ingredient-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-color: #C0C0C0;
+        }
+        .ingredient-name {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-mic {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #A0A0A0, #B8B8B8);
+            color: white;
+            border: none;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .btn-mic:hover {
+            transform: scale(1.05);
+            transition: 0.3s;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, #B0B0B0, #C8C8C8);
+        }
+        .btn-mic.listening {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3); }
+            50% { transform: scale(1.1); box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
+        }
+        .recipe-card {
+            background: #FEFEFE;
+            color: #333;
+            border-radius: 10px;
+            border: 1px solid #D0D0D0;
+            padding: 20px;
+            margin: 10px 0;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+        .expiring-soon {
+            border-left-color: #FF6B6B !important;
+            background: linear-gradient(135deg, #FFEBEE 0%, #FFF5F5 100%) !important;
+        }
+        .category-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            margin-right: 5px;
+            background: transparent;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+        }
+        .nav-link.active {
+            background: linear-gradient(135deg, #CCCCCC, #D8D8D8) !important;
+            color: #333 !important;
+            border-radius: 10px !important;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #CCCCCC, #D8D8D8);
+            border: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            color: #333;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #D8D8D8, #E0E0E0);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="main-container">
+            <!-- ヘッダー -->
+            <div class="header">
+                <div class="face-container">
+                    <div class="eyes-container">
+                        <div class="eye">
+                            <div class="pupil"></div>
+                        </div>
+                        <div class="eye">
+                            <div class="pupil"></div>
+                        </div>
+                    </div>
+                    <span class="app-title">TalkFridge</span>
+                    <div class="mouth"></div>
+                </div>
+            </div>
+
+            <!-- メインコンテンツ -->
+            <div class="p-4">
+                <!-- タブ -->
+                <ul class="nav nav-tabs mb-3" style="font-family: 'Inter', sans-serif; font-weight: 600;">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#ingredients" onclick="loadIngredients()">
+                            ぼくのお腹
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#recipe" onclick="loadSuggestions()">
+                            おすすめメシ
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#stats">
+                            食べた歴史
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- タブコンテンツ -->
+                <div class="tab-content">
+                    <!-- 食材一覧 -->
+                    <div id="ingredients" class="tab-pane active">
+                        <h4 class="mb-3">ぼくのお腹</h4>
+                        <div id="ingredients-container">
+                            <div class="text-center py-5">
+                                <i class="fas fa-spinner fa-spin fa-3x mb-3"></i>
+                                <p>読み込み中...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- レシピ提案 -->
+                    <div id="recipe" class="tab-pane">
+                        <div class="text-center">
+                            <button class="btn btn-primary btn-lg mb-3" onclick="suggestRecipe()">
+                                何作る？聞いてみる
+                            </button>
+                        </div>
+                        <div id="recipe-container"></div>
+                    </div>
+
+                    <!-- 統計 -->
+                    <div id="stats" class="tab-pane">
+                        <h4 class="mb-3">食べた歴史</h4>
+                        <div id="stats-container"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 残り使用量表示 -->
+            <div style="padding: 15px; background: #EAEAEA; border-radius: 0 0 15px 15px; text-align: center; border-top: 1px solid #D0D0D0;">
+                <div id="quota-text" style="font-size: 0.85em; color: #666;">
+                    読み込み中...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- マイクボタン -->
+    <button class="btn btn-mic" onclick="startVoiceInput()" id="micButton">
+        <i class="fas fa-microphone"></i>
+    </button>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // API URLを設定（環境変数から取得、または直接指定）
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:5001'  // ローカル開発時
+            : 'https://talkfridge-api.onrender.com';  // 本番環境（Render APIのURL）
+        
+        let recognition = null;
+        let isListening = false;
+
+        // Web Speech API が利用可能かチェック
+        function initRecognition() {
+            if (recognition) return recognition;
+            
+            if ('webkitSpeechRecognition' in window) {
+                recognition = new webkitSpeechRecognition();
+            } else if ('SpeechRecognition' in window) {
+                recognition = new SpeechRecognition();
+            } else {
+                return null;
+            }
+            
+            recognition.lang = 'ja-JP';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            
+            // 音声認識の結果
+            recognition.onresult = async (event) => {
+                const text = event.results[0][0].transcript;
+                console.log('📝 認識結果:', text);
+                
+                try {
+                    const parseResponse = await fetch(`${API_URL}/api/parse-ingredients`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({text: text})
+                    });
+                    
+                    const parseData = await parseResponse.json();
+                    
+                    console.log('🔍 抽出結果:', parseData);
+                    console.log('📝 デバッグ情報:', parseData.debug);
+                    
+                    if (parseData.success && parseData.ingredients.length > 0) {
+                        const addResponse = await fetch(`${API_URL}/api/add-ingredients`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ingredients: parseData.ingredients})
+                        });
+                        
+                        const addData = await addResponse.json();
+                        
+                        if (addData.success) {
+                            alert('✅ 食材を追加しました！');
+                            loadIngredients();
+                        } else {
+                            alert('❌ エラー: ' + (addData.error || '不明なエラー'));
+                        }
+                    } else {
+                        console.error('❌ 抽出できなかった食材:', parseData.debug);
+                        alert(`⚠️ 食材情報を抽出できませんでした。\n認識されたテキスト: "${text}"\nこの形式で話してください: "鶏肉2枚、トマト3個"`);
+                    }
+                } catch (error) {
+                    console.error('エラー:', error);
+                    alert('❌ エラーが発生しました: ' + error.message);
+                }
+                
+                document.getElementById('micButton').classList.remove('listening');
+                isListening = false;
+            };
+
+            recognition.onerror = (event) => {
+                console.error('音声認識エラー:', event.error);
+                document.getElementById('micButton').classList.remove('listening');
+                isListening = false;
+                
+                // エラーが発生しても次の試行のために状態をリセット
+                setTimeout(() => {
+                    isListening = false;
+                }, 100);
+                
+                let errorMessage = '音声認識でエラーが発生しました';
+                if (event.error === 'not-allowed') {
+                    // テキスト入力を使うか、設定を変更するか選んでもらう
+                    const useText = confirm('マイクの使用が許可されていません。\n\n【設定を変更する場合】\n1. ブラウザの右上「...」メニュー\n2. 「サイト設定」または「設定」\n3. 「マイク」を「許可」に変更\n4. ページをリロード\n\n【今すぐ使う場合】\n「OK」を押すとテキスト入力に切り替えられます。');
+                    if (useText) {
+                        // テキスト入力に切り替え
+                        setTimeout(() => {
+                            showTextInput();
+                        }, 100);
+                    }
+                    return; // alertは表示しない（confirmで対応済み）
+                } else if (event.error === 'no-speech') {
+                    errorMessage = '音声が検出されませんでした。もう一度お試しください。';
+                    alert('⚠️ ' + errorMessage);
+                } else if (event.error === 'network') {
+                    errorMessage = 'ネットワークエラーが発生しました。';
+                    alert('⚠️ ' + errorMessage);
+                } else if (event.error === 'aborted') {
+                    return; // ユーザーが中断した場合は何もしない
+                } else {
+                    alert('⚠️ ' + errorMessage);
+                }
+            };
+            
+            recognition.onend = () => {
+                console.log('音声認識が終了しました');
+                document.getElementById('micButton').classList.remove('listening');
+                isListening = false;
+            };
+            
+            return recognition;
+        }
+
+        // 音声入力開始
+        function startVoiceInput() {
+            // ユーザーアクションから直接初期化（マイク許可を促すため）
+            const rec = initRecognition();
+            
+            if (!rec) {
+                // テキスト入力を提案
+                const useText = confirm('お使いのブラウザでは音声認識が使えません。\n代わりにテキスト入力を使用しますか？');
+                if (useText) {
+                    showTextInput();
+                }
+                return;
+            }
+
+            const micButton = document.getElementById('micButton');
+            
+            if (!isListening) {
+                try {
+                    micButton.classList.add('listening');
+                    isListening = true;
+                    rec.start();
+                    console.log('🎤 音声認識を開始しました...');
+                } catch (error) {
+                    console.error('音声認識開始エラー:', error);
+                    micButton.classList.remove('listening');
+                    isListening = false;
+                    alert('⚠️ 音声認識を開始できませんでした。もう一度お試しください。');
+                }
+            } else {
+                rec.stop();
+            }
+        }
+
+        // テキスト入力フォームを表示
+        function showTextInput() {
+            const text = prompt('食材を入力してください\n例: 鶏肉2枚、トマト3個、ニンジン2本');
+            if (text && text.trim()) {
+                processTextInput(text.trim());
+            }
+        }
+        
+        // テキスト入力を処理
+        async function processTextInput(text) {
+            try {
+                const parseResponse = await fetch('/api/parse-ingredients', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({text: text})
+                });
+                
+                const parseData = await parseResponse.json();
+                
+                if (parseData.success && parseData.ingredients.length > 0) {
+                    const addResponse = await fetch('/api/add-ingredients', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ingredients: parseData.ingredients})
+                    });
+                    
+                    const addData = await addResponse.json();
+                    
+                    if (addData.success) {
+                        alert('✅ 食材を追加しました！');
+                        loadIngredients();
+                    } else {
+                        alert('❌ エラー: ' + (addData.error || '不明なエラー'));
+                    }
+                } else {
+                    alert(`⚠️ 食材情報を抽出できませんでした。\n入力されたテキスト: "${text}"\nこの形式で入力してください: "鶏肉2枚、トマト3個"`);
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+                alert('❌ エラーが発生しました: ' + error.message);
+            }
+        }
+
+        // HTMLエスケープ関数
+        const escapeHtml = (text) => {
+            if (!text) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
+        // 食材一覧を読み込み
+        async function loadIngredients() {
+            try {
+                const response = await fetch(`${API_URL}/api/get-ingredients`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const text = await response.text();
+                if (!text) {
+                    console.error('空のレスポンス');
+                    document.getElementById('ingredients-container').innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i> サーバーが応答していません。アプリを起動してください。
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const data = JSON.parse(text);
+                
+                const container = document.getElementById('ingredients-container');
+                
+                if (data.error) {
+                    container.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i> ${data.error}
+                        </div>
+                    `;
+                    return;
+                }
+                
+                if (!data.ingredients || data.ingredients.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-5">
+                            <i class="fas fa-inbox fa-3x mb-3 text-muted"></i>
+                            <p class="text-muted">食材がありません</p>
+                            <p class="text-muted small">右下のマイクボタンを押して食材を登録しましょう</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // カテゴリー順にソート
+                const categoryOrder = ['肉', '野菜', 'きのこ', '乳製品', '穀物', '調味料', '加工食品', 'その他'];
+                const sortedIngredients = [...data.ingredients].sort((a, b) => {
+                    const categoryA = a.category || 'その他';
+                    const categoryB = b.category || 'その他';
+                    const indexA = categoryOrder.indexOf(categoryA);
+                    const indexB = categoryOrder.indexOf(categoryB);
+                    
+                    if (indexA !== indexB) {
+                        return indexA - indexB;
+                    }
+                    
+                    return a.name.localeCompare(b.name, 'ja');
+                });
+                
+                // カテゴリバッジの色分けと絵文字
+                const categoryInfo = {
+                    '肉': { color: '#FF9999', emoji: '🥩' },
+                    '野菜': { color: '#99CC99', emoji: '🥬' },
+                    'きのこ': { color: '#CCCC99', emoji: '🍄' },
+                    '乳製品': { color: '#FFD700', emoji: '🥛' },
+                    '穀物': { color: '#FFB347', emoji: '🍚' },
+                    '調味料': { color: '#FFA07A', emoji: '🧂' },
+                    '加工食品': { color: '#DDA0DD', emoji: '🍜' },
+                    'その他': { color: '#CCCCCC', emoji: '' }
+                };
+                
+                container.innerHTML = sortedIngredients.map(ingredient => {
+                    const expiringClass = ingredient.expiry_date ? 'expiring-soon' : '';
+                    
+                    const info = categoryInfo[ingredient.category] || categoryInfo['その他'];
+                    const bgColor = info.color;
+                    const categoryEmoji = info.emoji;
+                    
+                    const safeName = escapeHtml(ingredient.name);
+                    const safeUnit = escapeHtml(ingredient.unit);
+                    const safeExpiry = escapeHtml(ingredient.expiry_date || '');
+                    
+                    return `
+                        <div class="ingredient-card ${expiringClass}" style="padding: 12px 15px; border-left: 4px solid ${bgColor};">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div style="flex: 1; display: flex; align-items: center; gap: 12px;">
+                                    ${categoryEmoji ? `<span style="font-size: 1.2em;">${categoryEmoji}</span>` : ''}
+                                    <div class="ingredient-name-editable" 
+                                         contenteditable="true"
+                                         style="outline: none; padding: 2px 4px; border-bottom: 1px dashed transparent; min-width: 100px;"
+                                         data-ingredient-id="${ingredient.id}"
+                                         data-original-name="${safeName}">${safeName}</div>
+                                    <span style="color: #999; font-size: 0.85em;">×</span>
+                                    <input type="number" 
+                                           step="0.1" 
+                                           value="${ingredient.quantity}" 
+                                           style="width: 40px; border: none; border-bottom: 1px solid #ddd; background: transparent; text-align: center; padding: 2px 0;"
+                                           data-ingredient-id="${ingredient.id}"
+                                           onblur="saveQuantityFromInput(${ingredient.id}, this.value)"
+                                           onkeypress="if(event.key==='Enter') this.blur()">
+                                    <span style="font-size: 0.85em; color: #999;">${safeUnit}</span>
+                                </div>
+                                <button class="btn btn-sm" style="background: #FFB6C1; color: white; border: none; padding: 6px 10px;" onclick="useIngredient(${ingredient.id}, 1)">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // 食材名の編集イベントを設定
+                document.querySelectorAll('.ingredient-name-editable').forEach(element => {
+                    if (!element.hasAttribute('data-edit-listener-attached')) {
+                        element.setAttribute('data-edit-listener-attached', 'true');
+                        
+                        element.addEventListener('blur', function() {
+                            const ingredientId = this.getAttribute('data-ingredient-id');
+                            const newName = this.textContent.trim();
+                            const originalName = this.getAttribute('data-original-name');
+                            
+                            if (newName && newName !== originalName) {
+                                saveNameOnly(ingredientId, newName, false).then(() => {
+                                    loadIngredients();
+                                });
+                            }
+                        });
+                        
+                        element.addEventListener('keydown', function(e) {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                this.blur();
+                            }
+                        });
+                    }
+                });
+                
+            } catch (error) {
+                console.error('エラー:', error);
+            }
+        }
+
+        // 食材名のみ保存
+        async function saveNameOnly(ingredientId, newName, reloadAfterSave = true) {
+            try {
+                const response = await fetch(`${API_URL}/api/get-ingredients`);
+                const data = await response.json();
+                const ingredient = data.ingredients.find(i => i.id == ingredientId);
+                
+                if (!ingredient) {
+                    console.error('食材が見つかりません');
+                    return;
+                }
+                
+                const updateResponse = await fetch(`${API_URL}/api/update-ingredient`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        ingredient_id: parseInt(ingredientId),
+                        name: newName,
+                        quantity: ingredient.quantity,
+                        unit: ingredient.unit,
+                        category: ingredient.category,
+                        expiry_date: ingredient.expiry_date
+                    })
+                });
+                
+                const updateData = await updateResponse.json();
+                
+                if (updateData.success) {
+                    console.log('✅ 食材名を更新しました');
+                    if (reloadAfterSave) {
+                        loadIngredients();
+                    }
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+            }
+        }
+        
+        // 数量のみ保存
+        async function saveQuantityFromInput(ingredientId, newQuantity) {
+            try {
+                const response = await fetch(`${API_URL}/api/get-ingredients`);
+                const data = await response.json();
+                const ingredient = data.ingredients.find(i => i.id == ingredientId);
+                
+                if (!ingredient) {
+                    console.error('食材が見つかりません');
+                    return;
+                }
+                
+                const updateResponse = await fetch(`${API_URL}/api/update-ingredient`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        ingredient_id: parseInt(ingredientId),
+                        name: ingredient.name,
+                        quantity: parseFloat(newQuantity),
+                        unit: ingredient.unit,
+                        category: ingredient.category,
+                        expiry_date: ingredient.expiry_date
+                    })
+                });
+                
+                const updateData = await updateResponse.json();
+                
+                if (updateData.success) {
+                    console.log('✅ 数量を更新しました');
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+            }
+        }
+
+        // 食材を使用
+        async function useIngredient(ingredientId, quantity) {
+            try {
+                const response = await fetch(`${API_URL}/api/use-ingredient`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ingredient_id: ingredientId, quantity: quantity})
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    loadIngredients();
+                } else {
+                    alert('❌ エラー: ' + data.error);
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+            }
+        }
+
+        // レシピ提案
+        async function suggestRecipe() {
+            try {
+                const ingredientsResponse = await fetch('/api/get-ingredients');
+                const ingredientsData = await ingredientsResponse.json();
+                
+                if (!ingredientsData.ingredients || ingredientsData.ingredients.length === 0) {
+                    alert('⚠️ 食材がありません');
+                    return;
+                }
+                
+                const recipeResponse = await fetch(`${API_URL}/api/suggest-recipe`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ingredients: ingredientsData.ingredients})
+                });
+                
+                const recipeData = await recipeResponse.json();
+                
+                if (recipeData.success) {
+                    document.getElementById('recipe-container').innerHTML = `
+                        <div class="recipe-card">
+                            <pre style="white-space: pre-wrap; color: #333;">${recipeData.recipe}</pre>
+                        </div>
+                    `;
+                    loadQuota();
+                } else if (recipeData.recipe) {
+                    document.getElementById('recipe-container').innerHTML = `
+                        <div class="recipe-card">
+                            <pre style="white-space: pre-wrap; color: #333;">${recipeData.recipe}</pre>
+                        </div>
+                    `;
+                } else {
+                    alert('❌ エラー: ' + (recipeData.error || '不明なエラー'));
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+                alert('❌ エラーが発生しました');
+            }
+        }
+
+        // 統計情報を読み込み
+        async function loadSuggestions() {
+            // タブが切り替わった時に実行される
+        }
+
+        // クォータ情報を読み込み
+        async function loadQuota() {
+            try {
+                const response = await fetch(`${API_URL}/api/get-quota`);
+                const data = await response.json();
+                
+                const quotaText = document.getElementById('quota-text');
+                if (data.daily_remaining !== undefined) {
+                    const dailyPercent = Math.round((data.daily_remaining / data.daily_limit) * 100);
+                    const monthlyPercent = Math.round((data.monthly_remaining / data.monthly_limit) * 100);
+                    
+                    quotaText.innerHTML = `
+                        📊 API残り使用量: 今日<span style="color: ${data.daily_remaining > 30 ? '#4A90E2' : '#FFB6C1'}; font-weight: bold;">${data.daily_remaining}回</span> | 今月<span style="color: ${data.monthly_remaining > 500 ? '#4A90E2' : '#FFB6C1'}; font-weight: bold;">${data.monthly_remaining}回</span>
+                    `;
+                } else {
+                    quotaText.textContent = '📊 クォータ情報を取得できませんでした';
+                }
+            } catch (error) {
+                console.error('クォータ読み込みエラー:', error);
+            }
+        }
+
+        // ページ読み込み時
+        document.addEventListener('DOMContentLoaded', function() {
+            loadIngredients();
+            loadQuota();
+            setInterval(loadQuota, 30000);
+        });
+    </script>
+</body>
+</html>
