@@ -10,15 +10,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* 2024-2025年流行色：ピーコックブルー、ソフトピンク、アースグレー */
-        :root {
-            --primary-blue: #4A90E2;        /* ピーコックブルー */
-            --soft-pink: #FFB6C1;          /* ソフトピンク */
-            --warm-gray: #E8E0D6;          /* 温かいグレー */
-            --coral-peach: #FFB5A7;        /* コーラルピーチ */
-            --sage-green: #B8C9B0;         /* セージグリーン */
-        }
-        
         * {
             font-family: 'Inter', 'Space Grotesk', sans-serif;
             letter-spacing: -0.01em;
@@ -48,24 +39,56 @@
             overflow: hidden;
             border-bottom: 2px solid #B0B0B0;
         }
-        .header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            animation: float 6s ease-in-out infinite;
+        
+        /* 顔のデザイン */
+        .face-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
         }
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            50% { transform: translate(20px, -20px) rotate(180deg); }
+        .eyes-container {
+            display: flex;
+            align-items: center;
+            gap: 80px;
         }
-        .header > * {
+        @media (max-width: 768px) {
+            .eyes-container {
+                gap: 80px;
+            }
+        }
+        .eye {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 50%;
             position: relative;
-            z-index: 1;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
+        .eye .pupil {
+            position: absolute;
+            top: 10px;
+            left: 13px;
+            width: 10px;
+            height: 10px;
+            background: #333;
+            border-radius: 50%;
+        }
+        .mouth {
+            width: 30px;
+            height: 16px;
+            background: #FF6B6B;
+            border-radius: 30px 30px 0 0;
+            transform: rotate(180deg);
+        }
+        .app-title {
+            font-size: 0.9em;
+            color: #666;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+        
         .ingredient-card {
             background: #FEFEFE;
             border-radius: 4px;
@@ -82,13 +105,8 @@
         .ingredient-name {
             font-size: 1.2em;
             font-weight: 600;
-            color: #4A90E2;
+            color: #333;
             font-family: 'Inter', sans-serif;
-            letter-spacing: -0.01em;
-        }
-        .ingredient-info {
-            font-size: 1.1em;
-            margin: 5px 0;
         }
         .btn-mic {
             position: fixed;
@@ -100,18 +118,13 @@
             background: linear-gradient(135deg, #A0A0A0, #B8B8B8);
             color: white;
             border: none;
-            box-shadow: 0 5px 20px rgba(74, 144, 226, 0.4);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
             z-index: 1000;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 24px;
             cursor: pointer;
-        }
-        @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
         }
         .btn-mic:hover {
             transform: scale(1.05);
@@ -123,8 +136,8 @@
             animation: pulse 1.5s infinite;
         }
         @keyframes pulse {
-            0%, 100% { transform: scale(1); box-shadow: 0 5px 20px rgba(74, 144, 226, 0.4); }
-            50% { transform: scale(1.1); box-shadow: 0 8px 30px rgba(74, 144, 226, 0.7); }
+            0%, 100% { transform: scale(1); box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3); }
+            50% { transform: scale(1.1); box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
         }
         .recipe-card {
             background: #FEFEFE;
@@ -133,8 +146,7 @@
             border: 1px solid #D0D0D0;
             padding: 20px;
             margin: 10px 0;
-            box-shadow: 0 5px 20px rgba(74, 144, 226, 0.25);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
         }
         .expiring-soon {
             border-left-color: #FF6B6B !important;
@@ -146,30 +158,26 @@
             border-radius: 20px;
             font-size: 0.8em;
             margin-right: 5px;
-            background: linear-gradient(135deg, #4A90E2, #FFB6C1);
-            color: white;
+            background: transparent;
             font-family: 'Inter', sans-serif;
             font-weight: 600;
-            letter-spacing: 0.01em;
         }
         .nav-link.active {
-            background: linear-gradient(135deg, #4A90E2, #FFB5A7) !important;
-            color: white !important;
+            background: linear-gradient(135deg, #CCCCCC, #D8D8D8) !important;
+            color: #333 !important;
             border-radius: 10px !important;
         }
         .btn-primary {
-            background: linear-gradient(135deg, #4A90E2, #FFB6C1);
+            background: linear-gradient(135deg, #CCCCCC, #D8D8D8);
             border: none;
-            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             font-family: 'Inter', sans-serif;
             font-weight: 600;
-            letter-spacing: 0.02em;
-            text-transform: uppercase;
-            font-size: 0.85em;
+            color: #333;
         }
         .btn-primary:hover {
-            background: linear-gradient(135deg, #FFB6C1, #FFB5A7);
-            box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);
+            background: linear-gradient(135deg, #D8D8D8, #E0E0E0);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
         }
     </style>
 </head>
@@ -178,19 +186,17 @@
         <div class="main-container">
             <!-- ヘッダー -->
             <div class="header">
-                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                    <div style="display: flex; align-items: center; gap: 80px;">
-                        <div style="width: 40px; height: 40px; background: #333; border-radius: 50%; position: relative; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
-                            <div style="position: absolute; top: 10px; left: 13px; width: 10px; height: 10px; background: white; border-radius: 50%;"></div>
+                <div class="face-container">
+                    <div class="eyes-container">
+                        <div class="eye">
+                            <div class="pupil"></div>
                         </div>
-                        <div style="width: 40px; height: 40px; background: #333; border-radius: 50%; position: relative; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
-                            <div style="position: absolute; top: 10px; left: 13px; width: 10px; height: 10px; background: white; border-radius: 50%;"></div>
+                        <div class="eye">
+                            <div class="pupil"></div>
                         </div>
                     </div>
-                    <span style="font-size: 0.85em; color: #666; opacity: 0.9;">TalkFridge</span>
-                    <div style="margin-top: 8px;">
-                        <div style="width: 30px; height: 16px; background: #FFB6C1; border-radius: 30px 30px 0 0; transform: rotate(180deg);"></div>
-                    </div>
+                    <span class="app-title">TalkFridge</span>
+                    <div class="mouth"></div>
                 </div>
             </div>
 
@@ -236,7 +242,6 @@
                             </button>
                         </div>
                         <div id="recipe-container"></div>
-                        <!-- レシピ提案後に使用量を更新 -->
                     </div>
 
                     <!-- 統計 -->
@@ -261,99 +266,125 @@
         <i class="fas fa-microphone"></i>
     </button>
 
-    <!-- 編集モーダル -->
-    <div class="modal fade" id="editIngredientModal" tabindex="-1" aria-labelledby="editIngredientModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editIngredientModalLabel"><i class="fas fa-edit"></i> 食材を編集</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="editIngredientForm">
-                        <input type="hidden" id="edit_ingredient_id">
-                        <div class="mb-3">
-                            <label for="edit_name" class="form-label">食材名</label>
-                            <input type="text" class="form-control" id="edit_name" required>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="edit_quantity" class="form-label">数量</label>
-                                <input type="number" step="0.1" class="form-control" id="edit_quantity" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="edit_unit" class="form-label">単位</label>
-                                <select class="form-control" id="edit_unit">
-                                    <option value="個">個</option>
-                                    <option value="枚">枚</option>
-                                    <option value="本">本</option>
-                                    <option value="ml">ml</option>
-                                    <option value="g">g</option>
-                                    <option value="kg">kg</option>
-                                    <option value="l">l</option>
-                                    <option value="リットル">リットル</option>
-                                    <option value="片">片</option>
-                                    <option value="パック">パック</option>
-                                    <option value="入り">入り</option>
-                                    <option value="つ">つ</option>
-                                    <option value="ヶ">ヶ</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="edit_category" class="form-label">カテゴリ</label>
-                            <select class="form-control" id="edit_category">
-                                <option value="">なし</option>
-                                <option value="肉">肉</option>
-                                <option value="野菜">野菜</option>
-                                <option value="きのこ">きのこ</option>
-                                <option value="乳製品">乳製品</option>
-                                <option value="穀物">穀物</option>
-                                <option value="調味料">調味料</option>
-                                <option value="加工食品">加工食品</option>
-                                <option value="その他">その他</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="edit_expiry_date" class="form-label">賞味期限</label>
-                            <input type="date" class="form-control" id="edit_expiry_date">
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-                    <button type="button" class="btn btn-primary" onclick="saveEditedIngredient()"><i class="fas fa-save"></i> 保存</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let recognition = null;
         let isListening = false;
 
-        // Web Speech API の初期化
-        if ('webkitSpeechRecognition' in window) {
-            recognition = new webkitSpeechRecognition();
-        } else if ('SpeechRecognition' in window) {
-            recognition = new SpeechRecognition();
-        }
-        
-        if (recognition) {
+        // Web Speech API が利用可能かチェック
+        function initRecognition() {
+            if (recognition) return recognition;
+            
+            if ('webkitSpeechRecognition' in window) {
+                recognition = new webkitSpeechRecognition();
+            } else if ('SpeechRecognition' in window) {
+                recognition = new SpeechRecognition();
+            } else {
+                return null;
+            }
+            
             recognition.lang = 'ja-JP';
             recognition.continuous = false;
+            recognition.interimResults = false;
+            
+            // 音声認識の結果
+            recognition.onresult = async (event) => {
+                const text = event.results[0][0].transcript;
+                console.log('📝 認識結果:', text);
+                
+                try {
+                    const parseResponse = await fetch('/api/parse-ingredients', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({text: text})
+                    });
+                    
+                    const parseData = await parseResponse.json();
+                    
+                    console.log('🔍 抽出結果:', parseData);
+                    console.log('📝 デバッグ情報:', parseData.debug);
+                    
+                    if (parseData.success && parseData.ingredients.length > 0) {
+                        const addResponse = await fetch('/api/add-ingredients', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ingredients: parseData.ingredients})
+                        });
+                        
+                        const addData = await addResponse.json();
+                        
+                        if (addData.success) {
+                            alert('✅ 食材を追加しました！');
+                            loadIngredients();
+                        } else {
+                            alert('❌ エラー: ' + (addData.error || '不明なエラー'));
+                        }
+                    } else {
+                        console.error('❌ 抽出できなかった食材:', parseData.debug);
+                        alert(`⚠️ 食材情報を抽出できませんでした。\n認識されたテキスト: "${text}"\nこの形式で話してください: "鶏肉2枚、トマト3個"`);
+                    }
+                } catch (error) {
+                    console.error('エラー:', error);
+                    alert('❌ エラーが発生しました: ' + error.message);
+                }
+                
+                document.getElementById('micButton').classList.remove('listening');
+                isListening = false;
+            };
+
+            recognition.onerror = (event) => {
+                console.error('音声認識エラー:', event.error);
+                document.getElementById('micButton').classList.remove('listening');
+                isListening = false;
+                
+                // エラーが発生しても次の試行のために状態をリセット
+                setTimeout(() => {
+                    isListening = false;
+                }, 100);
+                
+                let errorMessage = '音声認識でエラーが発生しました';
+                if (event.error === 'not-allowed') {
+                    // テキスト入力を使うか、設定を変更するか選んでもらう
+                    const useText = confirm('マイクの使用が許可されていません。\n\n【設定を変更する場合】\n1. ブラウザの右上「...」メニュー\n2. 「サイト設定」または「設定」\n3. 「マイク」を「許可」に変更\n4. ページをリロード\n\n【今すぐ使う場合】\n「OK」を押すとテキスト入力に切り替えられます。');
+                    if (useText) {
+                        // テキスト入力に切り替え
+                        setTimeout(() => {
+                            showTextInput();
+                        }, 100);
+                    }
+                    return; // alertは表示しない（confirmで対応済み）
+                } else if (event.error === 'no-speech') {
+                    errorMessage = '音声が検出されませんでした。もう一度お試しください。';
+                    alert('⚠️ ' + errorMessage);
+                } else if (event.error === 'network') {
+                    errorMessage = 'ネットワークエラーが発生しました。';
+                    alert('⚠️ ' + errorMessage);
+                } else if (event.error === 'aborted') {
+                    return; // ユーザーが中断した場合は何もしない
+                } else {
+                    alert('⚠️ ' + errorMessage);
+                }
+            };
+            
+            recognition.onend = () => {
+                console.log('音声認識が終了しました');
+                document.getElementById('micButton').classList.remove('listening');
+                isListening = false;
+            };
+            
+            return recognition;
         }
 
         // 音声入力開始
         function startVoiceInput() {
-            if (!recognition) {
-                // 音声認識が使えない場合はテキスト入力を提案
-                const useText = confirm('iPhoneのChromeでは音声認識が使えません。\n代わりにテキスト入力を使用しますか？\n（キャンセル: マイクボタンを非表示にします）');
+            // ユーザーアクションから直接初期化（マイク許可を促すため）
+            const rec = initRecognition();
+            
+            if (!rec) {
+                // テキスト入力を提案
+                const useText = confirm('お使いのブラウザでは音声認識が使えません。\n代わりにテキスト入力を使用しますか？');
                 if (useText) {
                     showTextInput();
-                } else {
-                    document.getElementById('micButton').style.display = 'none';
                 }
                 return;
             }
@@ -361,291 +392,19 @@
             const micButton = document.getElementById('micButton');
             
             if (!isListening) {
-                // マイクボタンを押した状態にする
-                micButton.classList.add('listening');
-                isListening = true;
-                recognition.start();
-                
-                console.log('🎤 音声認識を開始しました...');
+                try {
+                    micButton.classList.add('listening');
+                    isListening = true;
+                    rec.start();
+                    console.log('🎤 音声認識を開始しました...');
+                } catch (error) {
+                    console.error('音声認識開始エラー:', error);
+                    micButton.classList.remove('listening');
+                    isListening = false;
+                    alert('⚠️ 音声認識を開始できませんでした。もう一度お試しください。');
+                }
             } else {
-                recognition.stop();
-            }
-        }
-
-        // 音声認識の結果
-        recognition.onresult = async (event) => {
-            const text = event.results[0][0].transcript;
-            console.log('📝 認識結果:', text);
-            
-            // 認識結果を表示
-            alert(`認識: ${text}`);
-            
-            // オブジェクト識別
-            try {
-                const parseResponse = await fetch('/api/parse-ingredients', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({text: text})
-                });
-                
-                const parseData = await parseResponse.json();
-                
-                console.log('🔍 抽出結果:', parseData);
-                console.log('📝 デバッグ情報:', parseData.debug);
-                
-                if (parseData.success && parseData.ingredients.length > 0) {
-                    // 食材を登録
-                    const addResponse = await fetch('/api/add-ingredients', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ingredients: parseData.ingredients})
-                    });
-                    
-                    const addData = await addResponse.json();
-                    
-                    if (addData.success) {
-                        alert('✅ 食材を追加しました！');
-                        loadIngredients();
-                    } else {
-                        alert('❌ エラー: ' + (addData.error || '不明なエラー'));
-                    }
-                } else {
-                    console.error('❌ 抽出できなかった食材:', parseData.debug);
-                    alert(`⚠️ 食材情報を抽出できませんでした。\n認識されたテキスト: "${text}"\nこの形式で話してください: "鶏肉2枚、トマト3個"`);
-                }
-            } catch (error) {
-                console.error('エラー:', error);
-                alert('❌ エラーが発生しました: ' + error.message);
-            }
-            
-            // マイクボタンを元に戻す
-            document.getElementById('micButton').classList.remove('listening');
-            isListening = false;
-        };
-
-        recognition.onerror = (event) => {
-            console.error('音声認識エラー:', event.error);
-            document.getElementById('micButton').classList.remove('listening');
-            isListening = false;
-            
-            let errorMessage = '音声認識でエラーが発生しました';
-            if (event.error === 'not-allowed') {
-                errorMessage = 'マイクの使用が許可されていません。ブラウザ設定でマイクのアクセスを許可してください。';
-            } else if (event.error === 'no-speech') {
-                errorMessage = '音声が検出されませんでした。もう一度お試しください。';
-            } else if (event.error === 'network') {
-                errorMessage = 'ネットワークエラーが発生しました。';
-            } else if (event.error === 'aborted') {
-                return; // ユーザーが中断した場合は何もしない
-            }
-            alert('⚠️ ' + errorMessage);
-        };
-
-        // 食材一覧を読み込み
-        async function loadIngredients() {
-            try {
-                const response = await fetch('/api/get-ingredients');
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                // レスポンスが空でないか確認
-                const text = await response.text();
-                if (!text) {
-                    console.error('空のレスポンス');
-                    document.getElementById('ingredients-container').innerHTML = `
-                        <div class="alert alert-danger">
-                            <i class="fas fa-exclamation-triangle"></i> サーバーが応答していません。アプリを起動してください。
-                        </div>
-                    `;
-                    return;
-                }
-                
-                const data = JSON.parse(text);
-                
-                const container = document.getElementById('ingredients-container');
-                
-                console.log('レスポンスデータ:', data);
-                
-                // エラーが返ってきた場合
-                if (data.error) {
-                    container.innerHTML = `
-                        <div class="alert alert-danger">
-                            <i class="fas fa-exclamation-triangle"></i> ${data.error}
-                        </div>
-                    `;
-                    return;
-                }
-                
-                if (!data.ingredients || data.ingredients.length === 0) {
-                    container.innerHTML = `
-                        <div class="text-center py-5">
-                            <i class="fas fa-inbox fa-3x mb-3 text-muted"></i>
-                            <p class="text-muted">食材がありません</p>
-                            <p class="text-muted small">右下のマイクボタンを押して食材を登録しましょう</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                // 統計情報を作成
-                const categoryCount = {};
-                let totalCount = 0;
-                data.ingredients.forEach(ing => {
-                    const cat = ing.category || '未分類';
-                    categoryCount[cat] = (categoryCount[cat] || 0) + 1;
-                    totalCount += ing.quantity || 0;
-                });
-                
-                const categoryInfo = Object.entries(categoryCount)
-                    .map(([cat, count]) => `${cat}: ${count}個`)
-                    .join(' | ');
-                
-                // カテゴリー順にソート（定義順を維持）
-                const categoryOrder = ['肉', '野菜', 'きのこ', '乳製品', '穀物', '調味料', '加工食品', 'その他'];
-                const sortedIngredients = [...data.ingredients].sort((a, b) => {
-                    const categoryA = a.category || 'その他';
-                    const categoryB = b.category || 'その他';
-                    const indexA = categoryOrder.indexOf(categoryA);
-                    const indexB = categoryOrder.indexOf(categoryB);
-                    
-                    if (indexA !== indexB) {
-                        return indexA - indexB;
-                    }
-                    
-                    // 同じカテゴリーの場合は名前順
-                    return a.name.localeCompare(b.name, 'ja');
-                });
-                
-                container.innerHTML = sortedIngredients.map(ingredient => {
-                    const expiringClass = ingredient.expiry_date ? 'expiring-soon' : '';
-                    
-                    // 登録日をフォーマット
-                    let addedDate = '';
-                    if (ingredient.created_at) {
-                        const date = new Date(ingredient.created_at);
-                        const today = new Date();
-                        const diff = Math.floor((today - date) / (1000 * 60 * 60 * 24));
-                        if (diff === 0) addedDate = '今日';
-                        else if (diff === 1) addedDate = '昨日';
-                        else if (diff < 7) addedDate = `${diff}日前`;
-                        else addedDate = date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
-                    }
-                    
-                    // カテゴリバッジの色分けと絵文字
-                    const categoryInfo = {
-                        '肉': { color: '#FF9999', emoji: '🥩' },
-                        '野菜': { color: '#99CC99', emoji: '🥬' },
-                        'きのこ': { color: '#CCCC99', emoji: '🍄' },
-                        '乳製品': { color: '#FFD700', emoji: '🥛' },
-                        '穀物': { color: '#FFB347', emoji: '🍚' },
-                        '調味料': { color: '#FFA07A', emoji: '🧂' },
-                        '加工食品': { color: '#DDA0DD', emoji: '🍜' },
-                        'その他': { color: '#CCCCCC', emoji: '' }
-                    };
-                    const info = categoryInfo[ingredient.category] || categoryInfo['その他'];
-                    const bgColor = info.color;
-                    const categoryEmoji = info.emoji;
-                    
-                    // HTMLエスケープ関数
-                    const escapeHtml = (text) => {
-                        if (!text) return '';
-                        return String(text)
-                            .replace(/&/g, '&amp;')
-                            .replace(/</g, '&lt;')
-                            .replace(/>/g, '&gt;')
-                            .replace(/"/g, '&quot;')
-                            .replace(/'/g, '&#039;');
-                    };
-                    
-                    const safeName = escapeHtml(ingredient.name);
-                    const safeUnit = escapeHtml(ingredient.unit);
-                    const safeCategory = escapeHtml(ingredient.category || '');
-                    const safeExpiry = escapeHtml(ingredient.expiry_date || '');
-                    
-                    return `
-                        <div class="ingredient-card ${expiringClass}" style="padding: 12px 15px; border-left: 4px solid ${bgColor};">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div style="flex: 1; display: flex; align-items: center; gap: 12px;">
-                                    ${categoryEmoji ? `<span style="font-size: 1.2em;">${categoryEmoji}</span>` : ''}
-                                    <div class="ingredient-name-editable" 
-                                         contenteditable="true"
-                                         style="outline: none; padding: 2px 4px; border-bottom: 1px dashed transparent; min-width: 100px;"
-                                         data-ingredient-id="${ingredient.id}"
-                                         data-original-name="${safeName}">${safeName}</div>
-                                    <span style="color: #999; font-size: 0.85em;">×</span>
-                                    <input type="number" 
-                                           step="0.1" 
-                                           value="${ingredient.quantity}" 
-                                           style="width: 40px; border: none; border-bottom: 1px solid #ddd; background: transparent; text-align: center; padding: 2px 0;"
-                                           data-ingredient-id="${ingredient.id}"
-                                           onblur="saveQuantityFromInput(${ingredient.id}, this.value)"
-                                           onkeypress="if(event.key==='Enter') this.blur()">
-                                    <span style="font-size: 0.85em; color: #999;">${safeUnit}</span>
-                                </div>
-                                <button class="btn btn-sm" style="background: #FFB6C1; color: white; border: none; padding: 6px 10px;" onclick="useIngredient(${ingredient.id}, 1)">
-                                    <i class="fas fa-check"></i>
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                
-                // 食材名の編集イベントを設定（新しく追加されたカードのみ）
-                document.querySelectorAll('.ingredient-name-editable').forEach(element => {
-                    // 既にイベントリスナーが設定されている場合はスキップ
-                    if (!element.hasAttribute('data-edit-listener-attached')) {
-                        element.setAttribute('data-edit-listener-attached', 'true');
-                        
-                        element.addEventListener('blur', function() {
-                        const ingredientId = this.getAttribute('data-ingredient-id');
-                        const newName = this.textContent.trim();
-                        const originalName = this.getAttribute('data-original-name');
-                        
-                        if (newName && newName !== originalName) {
-                            // 保存前に編集中の内容を保持
-                            this.setAttribute('data-last-edited-value', newName);
-                            // 保存が完了してから画面を更新
-                            saveNameOnly(ingredientId, newName, false).then(() => {
-                                loadIngredients();
-                            });
-                        }
-                    });
-                    
-                        element.addEventListener('keydown', function(e) {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                this.blur();
-                            }
-                        });
-                    }
-                });
-                
-            } catch (error) {
-                console.error('エラー:', error);
-            }
-        }
-
-        // 食材を使用
-        async function useIngredient(ingredientId, quantity) {
-            try {
-                const response = await fetch('/api/use-ingredient', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ingredient_id: ingredientId, quantity: quantity})
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert('✅ 食材を使用しました');
-                    loadIngredients();
-                } else {
-                    alert('❌ エラー: ' + data.error);
-                }
-            } catch (error) {
-                console.error('エラー:', error);
+                rec.stop();
             }
         }
 
@@ -692,10 +451,255 @@
             }
         }
 
+        // HTMLエスケープ関数
+        const escapeHtml = (text) => {
+            if (!text) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
+        // 食材一覧を読み込み
+        async function loadIngredients() {
+            try {
+                const response = await fetch('/api/get-ingredients');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const text = await response.text();
+                if (!text) {
+                    console.error('空のレスポンス');
+                    document.getElementById('ingredients-container').innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i> サーバーが応答していません。アプリを起動してください。
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const data = JSON.parse(text);
+                
+                const container = document.getElementById('ingredients-container');
+                
+                if (data.error) {
+                    container.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i> ${data.error}
+                        </div>
+                    `;
+                    return;
+                }
+                
+                if (!data.ingredients || data.ingredients.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-5">
+                            <i class="fas fa-inbox fa-3x mb-3 text-muted"></i>
+                            <p class="text-muted">食材がありません</p>
+                            <p class="text-muted small">右下のマイクボタンを押して食材を登録しましょう</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // カテゴリー順にソート
+                const categoryOrder = ['肉', '野菜', 'きのこ', '乳製品', '穀物', '調味料', '加工食品', 'その他'];
+                const sortedIngredients = [...data.ingredients].sort((a, b) => {
+                    const categoryA = a.category || 'その他';
+                    const categoryB = b.category || 'その他';
+                    const indexA = categoryOrder.indexOf(categoryA);
+                    const indexB = categoryOrder.indexOf(categoryB);
+                    
+                    if (indexA !== indexB) {
+                        return indexA - indexB;
+                    }
+                    
+                    return a.name.localeCompare(b.name, 'ja');
+                });
+                
+                // カテゴリバッジの色分けと絵文字
+                const categoryInfo = {
+                    '肉': { color: '#FF9999', emoji: '🥩' },
+                    '野菜': { color: '#99CC99', emoji: '🥬' },
+                    'きのこ': { color: '#CCCC99', emoji: '🍄' },
+                    '乳製品': { color: '#FFD700', emoji: '🥛' },
+                    '穀物': { color: '#FFB347', emoji: '🍚' },
+                    '調味料': { color: '#FFA07A', emoji: '🧂' },
+                    '加工食品': { color: '#DDA0DD', emoji: '🍜' },
+                    'その他': { color: '#CCCCCC', emoji: '' }
+                };
+                
+                container.innerHTML = sortedIngredients.map(ingredient => {
+                    const expiringClass = ingredient.expiry_date ? 'expiring-soon' : '';
+                    
+                    const info = categoryInfo[ingredient.category] || categoryInfo['その他'];
+                    const bgColor = info.color;
+                    const categoryEmoji = info.emoji;
+                    
+                    const safeName = escapeHtml(ingredient.name);
+                    const safeUnit = escapeHtml(ingredient.unit);
+                    const safeExpiry = escapeHtml(ingredient.expiry_date || '');
+                    
+                    return `
+                        <div class="ingredient-card ${expiringClass}" style="padding: 12px 15px; border-left: 4px solid ${bgColor};">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div style="flex: 1; display: flex; align-items: center; gap: 12px;">
+                                    ${categoryEmoji ? `<span style="font-size: 1.2em;">${categoryEmoji}</span>` : ''}
+                                    <div class="ingredient-name-editable" 
+                                         contenteditable="true"
+                                         style="outline: none; padding: 2px 4px; border-bottom: 1px dashed transparent; min-width: 100px;"
+                                         data-ingredient-id="${ingredient.id}"
+                                         data-original-name="${safeName}">${safeName}</div>
+                                    <span style="color: #999; font-size: 0.85em;">×</span>
+                                    <input type="number" 
+                                           step="0.1" 
+                                           value="${ingredient.quantity}" 
+                                           style="width: 40px; border: none; border-bottom: 1px solid #ddd; background: transparent; text-align: center; padding: 2px 0;"
+                                           data-ingredient-id="${ingredient.id}"
+                                           onblur="saveQuantityFromInput(${ingredient.id}, this.value)"
+                                           onkeypress="if(event.key==='Enter') this.blur()">
+                                    <span style="font-size: 0.85em; color: #999;">${safeUnit}</span>
+                                </div>
+                                <button class="btn btn-sm" style="background: #FFB6C1; color: white; border: none; padding: 6px 10px;" onclick="useIngredient(${ingredient.id}, 1)">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // 食材名の編集イベントを設定
+                document.querySelectorAll('.ingredient-name-editable').forEach(element => {
+                    if (!element.hasAttribute('data-edit-listener-attached')) {
+                        element.setAttribute('data-edit-listener-attached', 'true');
+                        
+                        element.addEventListener('blur', function() {
+                            const ingredientId = this.getAttribute('data-ingredient-id');
+                            const newName = this.textContent.trim();
+                            const originalName = this.getAttribute('data-original-name');
+                            
+                            if (newName && newName !== originalName) {
+                                saveNameOnly(ingredientId, newName, false).then(() => {
+                                    loadIngredients();
+                                });
+                            }
+                        });
+                        
+                        element.addEventListener('keydown', function(e) {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                this.blur();
+                            }
+                        });
+                    }
+                });
+                
+            } catch (error) {
+                console.error('エラー:', error);
+            }
+        }
+
+        // 食材名のみ保存
+        async function saveNameOnly(ingredientId, newName, reloadAfterSave = true) {
+            try {
+                const response = await fetch('/api/get-ingredients');
+                const data = await response.json();
+                const ingredient = data.ingredients.find(i => i.id == ingredientId);
+                
+                if (!ingredient) {
+                    console.error('食材が見つかりません');
+                    return;
+                }
+                
+                const updateResponse = await fetch('/api/update-ingredient', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        ingredient_id: parseInt(ingredientId),
+                        name: newName,
+                        quantity: ingredient.quantity,
+                        unit: ingredient.unit,
+                        category: ingredient.category,
+                        expiry_date: ingredient.expiry_date
+                    })
+                });
+                
+                const updateData = await updateResponse.json();
+                
+                if (updateData.success) {
+                    console.log('✅ 食材名を更新しました');
+                    if (reloadAfterSave) {
+                        loadIngredients();
+                    }
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+            }
+        }
+        
+        // 数量のみ保存
+        async function saveQuantityFromInput(ingredientId, newQuantity) {
+            try {
+                const response = await fetch('/api/get-ingredients');
+                const data = await response.json();
+                const ingredient = data.ingredients.find(i => i.id == ingredientId);
+                
+                if (!ingredient) {
+                    console.error('食材が見つかりません');
+                    return;
+                }
+                
+                const updateResponse = await fetch('/api/update-ingredient', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        ingredient_id: parseInt(ingredientId),
+                        name: ingredient.name,
+                        quantity: parseFloat(newQuantity),
+                        unit: ingredient.unit,
+                        category: ingredient.category,
+                        expiry_date: ingredient.expiry_date
+                    })
+                });
+                
+                const updateData = await updateResponse.json();
+                
+                if (updateData.success) {
+                    console.log('✅ 数量を更新しました');
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+            }
+        }
+
+        // 食材を使用
+        async function useIngredient(ingredientId, quantity) {
+            try {
+                const response = await fetch('/api/use-ingredient', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ingredient_id: ingredientId, quantity: quantity})
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    loadIngredients();
+                } else {
+                    alert('❌ エラー: ' + data.error);
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+            }
+        }
+
         // レシピ提案
         async function suggestRecipe() {
             try {
-                // まず現在の食材を取得
                 const ingredientsResponse = await fetch('/api/get-ingredients');
                 const ingredientsData = await ingredientsResponse.json();
                 
@@ -704,7 +708,6 @@
                     return;
                 }
                 
-                // レシピ提案を取得
                 const recipeResponse = await fetch('/api/suggest-recipe', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -716,16 +719,14 @@
                 if (recipeData.success) {
                     document.getElementById('recipe-container').innerHTML = `
                         <div class="recipe-card">
-                            <pre style="white-space: pre-wrap; color: white;">${recipeData.recipe}</pre>
+                            <pre style="white-space: pre-wrap; color: #333;">${recipeData.recipe}</pre>
                         </div>
                     `;
-                    // クォータ情報を更新
                     loadQuota();
                 } else if (recipeData.recipe) {
-                    // Gemini APIが未設定の場合
                     document.getElementById('recipe-container').innerHTML = `
                         <div class="recipe-card">
-                            <pre style="white-space: pre-wrap; color: white;">${recipeData.recipe}</pre>
+                            <pre style="white-space: pre-wrap; color: #333;">${recipeData.recipe}</pre>
                         </div>
                     `;
                 } else {
@@ -768,146 +769,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadIngredients();
             loadQuota();
-            // 30秒ごとに更新
             setInterval(loadQuota, 30000);
         });
-        // 食材を編集
-        function editIngredient(id, name, quantity, unit, category, expiry_date) {
-            document.getElementById('edit_ingredient_id').value = id;
-            document.getElementById('edit_name').value = name;
-            document.getElementById('edit_quantity').value = quantity;
-            document.getElementById('edit_unit').value = unit;
-            document.getElementById('edit_category').value = category || '';
-            document.getElementById('edit_expiry_date').value = expiry_date || '';
-            
-            // モーダルを表示
-            const modal = new bootstrap.Modal(document.getElementById('editIngredientModal'));
-            modal.show();
-        }
-
-        // 編集した食材を保存
-        // 食材名のみ保存
-        async function saveNameOnly(ingredientId, newName, reloadAfterSave = true) {
-            try {
-                // まず食材データを取得
-                const response = await fetch('/api/get-ingredients');
-                const data = await response.json();
-                const ingredient = data.ingredients.find(i => i.id == ingredientId);
-                
-                if (!ingredient) {
-                    console.error('食材が見つかりません');
-                    return;
-                }
-                
-                // 食材名だけを更新
-                const updateResponse = await fetch('/api/update-ingredient', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        ingredient_id: parseInt(ingredientId),
-                        name: newName,
-                        quantity: ingredient.quantity,
-                        unit: ingredient.unit,
-                        category: ingredient.category,
-                        expiry_date: ingredient.expiry_date
-                    })
-                });
-                
-                const updateData = await updateResponse.json();
-                
-                if (updateData.success) {
-                    console.log('✅ 食材名を更新しました');
-                    // 表示を更新（オプション）
-                    if (reloadAfterSave) {
-                        loadIngredients();
-                    }
-                }
-            } catch (error) {
-                console.error('エラー:', error);
-            }
-        }
-        
-        // 数量のみ保存
-        async function saveQuantityFromInput(ingredientId, newQuantity) {
-            try {
-                const response = await fetch('/api/get-ingredients');
-                const data = await response.json();
-                const ingredient = data.ingredients.find(i => i.id == ingredientId);
-                
-                if (!ingredient) {
-                    console.error('食材が見つかりません');
-                    return;
-                }
-                
-                const updateResponse = await fetch('/api/update-ingredient', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        ingredient_id: parseInt(ingredientId),
-                        name: ingredient.name,
-                        quantity: parseFloat(newQuantity),
-                        unit: ingredient.unit,
-                        category: ingredient.category,
-                        expiry_date: ingredient.expiry_date
-                    })
-                });
-                
-                const updateData = await updateResponse.json();
-                
-                if (updateData.success) {
-                    console.log('✅ 数量を更新しました');
-                    // 画面を更新しない（入力欄の値はそのまま）
-                }
-            } catch (error) {
-                console.error('エラー:', error);
-            }
-        }
-        
-        async function saveEditedIngredient() {
-            const ingredient_id = document.getElementById('edit_ingredient_id').value;
-            const name = document.getElementById('edit_name').value;
-            const quantity = parseFloat(document.getElementById('edit_quantity').value);
-            const unit = document.getElementById('edit_unit').value;
-            const category = document.getElementById('edit_category').value;
-            const expiry_date = document.getElementById('edit_expiry_date').value || null;
-            
-            if (!name || !quantity) {
-                alert('⚠️ 食材名と数量は必須です');
-                return;
-            }
-            
-            try {
-                const response = await fetch('/api/update-ingredient', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        ingredient_id: parseInt(ingredient_id),
-                        name: name,
-                        quantity: quantity,
-                        unit: unit,
-                        category: category,
-                        expiry_date: expiry_date
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert('✅ 食材を更新しました');
-                    // モーダルを閉じる
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('editIngredientModal'));
-                    modal.hide();
-                    // 食材リストを更新
-                    loadIngredients();
-                } else {
-                    alert('❌ エラー: ' + data.error);
-                }
-            } catch (error) {
-                console.error('エラー:', error);
-                alert('❌ エラーが発生しました');
-            }
-        }
     </script>
 </body>
 </html>
-

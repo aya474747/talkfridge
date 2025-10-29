@@ -1,9 +1,17 @@
-*.pyc
 __pycache__/
-*.db
-.env
-api_usage.json
-.DS_Store
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
 venv/
 ENV/
+.venv
+.env
+*.db
+*.sqlite
+*.sqlite3
+api_usage.json
+.DS_Store
+*.log
 
