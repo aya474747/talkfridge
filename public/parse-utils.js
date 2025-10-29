@@ -75,17 +75,31 @@ function guessCategory(name) {
     return 'その他';
 }
 
-// 食材名を抽出（商品名辞書を使用）
-function extractFoodName(text) {
-    // まず商品名辞書で完全一致をチェック
-    for (const foodName of COMMON_FOOD_NAMES) {
-        if (text.includes(foodName)) {
-            // 商品名の前後を確認して、単語境界で区切られているかチェック
+// テキストから食材名を抽出（商品名辞書を使用、シンプル版）
+function findFoodNameInText(text) {
+    text = text.trim();
+    if (!text) return null;
+    
+    // 商品名辞書で最長一致を探す（長いものから順に）
+    const sortedFoodNames = [...COMMON_FOOD_NAMES].sort((a, b) => b.length - a.length);
+    
+    for (const foodName of sortedFoodNames) {
+        // 完全一致、または前後に区切り文字がある場合
+        if (text === foodName) {
+            return foodName;
+        }
+        
+        // テキストが食材名で始まっているか、終わっているか
+        const startsWith = text.startsWith(foodName);
+        const endsWith = text.endsWith(foodName);
+        
+        if (startsWith || endsWith) {
+            // 前後の文字をチェック（日本語文字でなければOK）
             const index = text.indexOf(foodName);
             const before = index > 0 ? text[index - 1] : '';
             const after = index + foodName.length < text.length ? text[index + foodName.length] : '';
             
-            // 単語境界（空白、数字、記号など）で区切られている場合
+            // 区切り文字（、とスペースなど）または日本語文字でない場合
             if (!/[あ-んア-ン一-龯]/.test(before) && !/[あ-んア-ン一-龯]/.test(after)) {
                 return foodName;
             }
@@ -95,53 +109,53 @@ function extractFoodName(text) {
     return null;
 }
 
-// テキストから食材を細かく分割
+// テキストから食材を細かく分割（改善版）
 function splitIntoFoodItems(text) {
-    const items = [];
-    
-    // 1. まず「、」や「と」で大まかに分割
-    let parts = text.split(/[、，]/);
+    // 1. まず「、」や「，」で分割
+    let parts = text.split(/[、，]/).map(p => p.trim()).filter(p => p);
     
     // 2. 各パートをさらに「と」で分割
-    parts = parts.flatMap(part => part.split(/[と]/));
+    parts = parts.flatMap(part => {
+        return part.split(/[と]/).map(p => p.trim()).filter(p => p);
+    });
     
-    // 3. よくある食材名を探して、さらに細かく分割
+    // 3. 各パートを処理
     const results = [];
     
     for (let part of parts) {
         part = part.trim();
         if (!part) continue;
         
-        // 商品名辞書に完全一致するものがあれば、それを使う
-        const matchedFood = extractFoodName(part);
+        // 数量パターンをチェック（先に数量がある場合）
+        const quantityMatch = part.match(/^(.+?)(\d+\.?\d*)(枚|個|本|ml|g|kg|l|リットル|片|パック|入り|つ|ヶ)$/);
         
-        if (matchedFood) {
-            // 商品名が見つかった場合、それを抽出し、残りも処理
-            const index = part.indexOf(matchedFood);
-            const before = part.substring(0, index).trim();
-            const after = part.substring(index + matchedFood.length).trim();
+        if (quantityMatch) {
+            // 数量がある場合
+            const namePart = quantityMatch[1].trim();
+            const quantity = quantityMatch[2];
+            const unit = quantityMatch[3];
             
-            // 商品名を追加
-            results.push(matchedFood);
+            // 食材名を抽出
+            const foodName = findFoodNameInText(namePart);
             
-            // 前に何かあれば処理
-            if (before) {
-                // 数量パターンを探す
-                const beforeMatch = before.match(/(.+?)(\d+\.?\d*)(枚|個|本|ml|g|kg|l|リットル|片|パック|入り|つ|ヶ)$/);
-                if (beforeMatch) {
-                    results.push(beforeMatch[1].trim() + beforeMatch[2] + beforeMatch[3]);
-                } else {
-                    results.push(...splitIntoFoodItems(before));
-                }
-            }
-            
-            // 後ろに何かあれば処理
-            if (after) {
-                results.push(...splitIntoFoodItems(after));
+            if (foodName) {
+                // 食材名が見つかった場合
+                results.push(`${foodName}${quantity}${unit}`);
+            } else {
+                // 食材名が見つからない場合、そのまま使用
+                results.push(part);
             }
         } else {
-            // 商品名が見つからない場合、元の処理（数量パターンを探す）
-            results.push(part);
+            // 数量がない場合
+            const foodName = findFoodNameInText(part);
+            
+            if (foodName) {
+                // 食材名が見つかった場合、それを使用
+                results.push(foodName);
+            } else {
+                // 食材名が見つからない場合、パート全体を食材名として使用
+                results.push(part);
+            }
         }
     }
     
@@ -185,8 +199,8 @@ function parseIngredients(text) {
             });
         } else {
             // 数量が指定されていない場合
-            // まず商品名辞書でチェック
-            const matchedFood = extractFoodName(item);
+            // 商品名辞書でチェック
+            const matchedFood = findFoodNameInText(item);
             
             if (matchedFood) {
                 // 商品名として認識
