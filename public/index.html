@@ -179,6 +179,41 @@
             background: linear-gradient(135deg, #D8D8D8, #E0E0E0);
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
         }
+        
+        /* トースト通知 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            min-width: 250px;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 10000;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .toast.error {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+        }
+        .toast.warning {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+        }
+        .toast-icon {
+            font-size: 20px;
+        }
     </style>
 </head>
 <body>
@@ -276,6 +311,45 @@
     <!-- Gemini API (CDN) -->
     <script src="https://cdn.jsdelivr.net/npm/@google/generative-ai@0.21.0/dist/index.umd.js"></script>
     <script>
+        // トースト通知を表示
+        function showToast(message, type = 'success') {
+            // 既存のトーストを削除
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            // トースト要素を作成
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️'
+            };
+            
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type] || icons.success}</span>
+                <span>${message}</span>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // アニメーション
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            // 自動で削除
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+        
         // Gemini APIキー（設定画面で変更可能にする）
         let GEMINI_API_KEY = localStorage.getItem('GEMINI_API_KEY') || '';
         let geminiModel = null;
@@ -342,7 +416,7 @@
                         // addIngredients関数が読み込まれているか確認
                         if (typeof addIngredients !== 'function') {
                             console.error('❌ addIngredients関数が読み込まれていません');
-                            alert('❌ エラー: アプリの初期化に失敗しました。ページをリロードしてください。');
+                            showToast('アプリの初期化に失敗しました。ページをリロードしてください。', 'error');
                             return;
                         }
                         
@@ -350,19 +424,20 @@
                         const addResult = await addIngredients(parseData.ingredients);
                         
                         if (addResult && addResult.success) {
-                            alert('✅ 食材を追加しました！');
+                            const count = parseData.ingredients.length;
+                            showToast(`${count}個の食材を追加しました`, 'success');
                             loadIngredients();
                         } else {
-                            alert('❌ エラー: ' + (addResult?.error || '不明なエラー'));
+                            showToast('エラー: ' + (addResult?.error || '不明なエラー'), 'error');
                         }
                     } else {
                         console.error('❌ 抽出できなかった食材:', parseData.debug);
-                        alert(`⚠️ 食材情報を抽出できませんでした。\n認識されたテキスト: "${text}"\nこの形式で話してください: "鶏肉2枚、トマト3個"`);
+                        showToast('食材情報を抽出できませんでした。もう一度お試しください。', 'warning');
                     }
                 } catch (error) {
                     console.error('エラー:', error);
                     console.error('エラースタック:', error.stack);
-                    alert('❌ エラーが発生しました: ' + error.message + '\n\n詳細: ' + error.toString());
+                    showToast('エラーが発生しました: ' + error.message, 'error');
                 }
                 
                 document.getElementById('micButton').classList.remove('listening');
@@ -379,27 +454,22 @@
                     isListening = false;
                 }, 100);
                 
-                let errorMessage = '音声認識でエラーが発生しました';
                 if (event.error === 'not-allowed') {
-                    // テキスト入力を使うか、設定を変更するか選んでもらう
-                    const useText = confirm('マイクの使用が許可されていません。\n\n【設定を変更する場合】\n1. ブラウザの右上「...」メニュー\n2. 「サイト設定」または「設定」\n3. 「マイク」を「許可」に変更\n4. ページをリロード\n\n【今すぐ使う場合】\n「OK」を押すとテキスト入力に切り替えられます。');
-                    if (useText) {
-                        // テキスト入力に切り替え
-                        setTimeout(() => {
-                            showTextInput();
-                        }, 100);
-                    }
-                    return; // alertは表示しない（confirmで対応済み）
+                    // マイク許可が必要な場合のみ通知
+                    showToast('マイクの使用が許可されていません。設定を確認してください。', 'warning');
+                    // テキスト入力に切り替えを提案（自動的に切り替え）
+                    setTimeout(() => {
+                        showTextInput();
+                    }, 500);
+                    return;
                 } else if (event.error === 'no-speech') {
-                    errorMessage = '音声が検出されませんでした。もう一度お試しください。';
-                    alert('⚠️ ' + errorMessage);
+                    showToast('音声が検出されませんでした。もう一度お試しください。', 'warning');
                 } else if (event.error === 'network') {
-                    errorMessage = 'ネットワークエラーが発生しました。';
-                    alert('⚠️ ' + errorMessage);
+                    showToast('ネットワークエラーが発生しました。', 'error');
                 } else if (event.error === 'aborted') {
                     return; // ユーザーが中断した場合は何もしない
                 } else {
-                    alert('⚠️ ' + errorMessage);
+                    showToast('音声認識でエラーが発生しました', 'warning');
                 }
             };
             
@@ -418,11 +488,11 @@
             const rec = initRecognition();
             
             if (!rec) {
-                // テキスト入力を提案
-                const useText = confirm('お使いのブラウザでは音声認識が使えません。\n代わりにテキスト入力を使用しますか？');
-                if (useText) {
+                // テキスト入力を自動的に表示
+                showToast('音声認識が使えないため、テキスト入力に切り替えます', 'warning');
+                setTimeout(() => {
                     showTextInput();
-                }
+                }, 500);
                 return;
             }
 
@@ -438,7 +508,7 @@
                     console.error('音声認識開始エラー:', error);
                     micButton.classList.remove('listening');
                     isListening = false;
-                    alert('⚠️ 音声認識を開始できませんでした。もう一度お試しください。');
+                    showToast('音声認識を開始できませんでした。もう一度お試しください。', 'warning');
                 }
             } else {
                 rec.stop();
@@ -463,7 +533,7 @@
                     // addIngredients関数が読み込まれているか確認
                     if (typeof addIngredients !== 'function') {
                         console.error('❌ addIngredients関数が読み込まれていません');
-                        alert('❌ エラー: アプリの初期化に失敗しました。ページをリロードしてください。');
+                        showToast('アプリの初期化に失敗しました。ページをリロードしてください。', 'error');
                         return;
                     }
                     
@@ -471,17 +541,18 @@
                     const addResult = await addIngredients(parseData.ingredients);
                     
                     if (addResult && addResult.success) {
-                        alert('✅ 食材を追加しました！');
+                        const count = parseData.ingredients.length;
+                        showToast(`${count}個の食材を追加しました`, 'success');
                         loadIngredients();
                     } else {
-                        alert('❌ エラー: ' + (addResult?.error || '不明なエラー'));
+                        showToast('エラー: ' + (addResult?.error || '不明なエラー'), 'error');
                     }
                 } else {
-                    alert(`⚠️ 食材情報を抽出できませんでした。\n入力されたテキスト: "${text}"\nこの形式で入力してください: "鶏肉2枚、トマト3個"`);
+                    showToast('食材情報を抽出できませんでした。もう一度お試しください。', 'warning');
                 }
             } catch (error) {
                 console.error('エラー:', error);
-                alert('❌ エラーが発生しました: ' + error.message);
+                showToast('エラーが発生しました: ' + error.message, 'error');
             }
         }
 
