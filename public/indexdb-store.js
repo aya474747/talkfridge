@@ -5,7 +5,7 @@
 
 // IndexedDBの設定
 const DB_NAME = 'TalkFridgeDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // バージョンを上げて既存のDBと互換性を保つ
 const STORE_INGREDIENTS = 'ingredients';
 const STORE_RECIPE_HISTORY = 'recipeHistory';
 const STORE_USAGE_HISTORY = 'usageHistory';
@@ -25,23 +25,34 @@ function initDB() {
         
         request.onupgradeneeded = (event) => {
             const db = event.target.result;
+            const oldVersion = event.oldVersion;
             
-            // 食材テーブル
-            if (!db.objectStoreNames.contains(STORE_INGREDIENTS)) {
-                const ingredientsStore = db.createObjectStore(STORE_INGREDIENTS, { keyPath: 'id', autoIncrement: true });
-                ingredientsStore.createIndex('name', 'name', { unique: false });
-                ingredientsStore.createIndex('category', 'category', { unique: false });
+            // バージョン1から2への移行
+            if (oldVersion < 1 || !db.objectStoreNames.contains(STORE_INGREDIENTS)) {
+                // 食材テーブル
+                if (!db.objectStoreNames.contains(STORE_INGREDIENTS)) {
+                    const ingredientsStore = db.createObjectStore(STORE_INGREDIENTS, { keyPath: 'id', autoIncrement: true });
+                    ingredientsStore.createIndex('name', 'name', { unique: false });
+                    ingredientsStore.createIndex('category', 'category', { unique: false });
+                }
+                
+                // レシピ履歴テーブル
+                if (!db.objectStoreNames.contains(STORE_RECIPE_HISTORY)) {
+                    db.createObjectStore(STORE_RECIPE_HISTORY, { keyPath: 'id', autoIncrement: true });
+                }
+                
+                // 使用履歴テーブル
+                if (!db.objectStoreNames.contains(STORE_USAGE_HISTORY)) {
+                    db.createObjectStore(STORE_USAGE_HISTORY, { keyPath: 'id', autoIncrement: true });
+                }
             }
             
-            // レシピ履歴テーブル
-            if (!db.objectStoreNames.contains(STORE_RECIPE_HISTORY)) {
-                db.createObjectStore(STORE_RECIPE_HISTORY, { keyPath: 'id', autoIncrement: true });
-            }
-            
-            // 使用履歴テーブル
-            if (!db.objectStoreNames.contains(STORE_USAGE_HISTORY)) {
-                db.createObjectStore(STORE_USAGE_HISTORY, { keyPath: 'id', autoIncrement: true });
-            }
+            // 将来のバージョンアップ時の処理はここに追加
+        };
+        
+        // バージョンエラーをキャッチ
+        request.onblocked = () => {
+            console.warn('IndexedDBのアップグレードがブロックされています。他のタブを閉じてください。');
         };
     });
 }
