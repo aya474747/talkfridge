@@ -472,11 +472,68 @@
             
             recognition.lang = 'ja-JP';
             recognition.continuous = false;
-            recognition.interimResults = false;
+            recognition.interimResults = true; // 中間結果も取得
             
-            // 音声認識の結果
-            recognition.onresult = async (event) => {
-                const text = event.results[0][0].transcript;
+            // リアルタイム音声認識結果の表示
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+                
+                // 中間結果と最終結果を分離
+                for (let i = 0; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                
+                // 表示を更新
+                const recognitionTextEl = document.getElementById('recognitionText');
+                const modal = document.getElementById('voiceRecognitionModal');
+                
+                if (recognitionTextEl && modal) {
+                    if (finalTranscript) {
+                        recognitionTextEl.textContent = finalTranscript;
+                        recognitionTextEl.className = 'recognition-text final';
+                    } else if (interimTranscript) {
+                        recognitionTextEl.textContent = interimTranscript;
+                        recognitionTextEl.className = 'recognition-text interim';
+                    }
+                    
+                    // モーダルを表示
+                    if (!modal.classList.contains('show')) {
+                        modal.classList.add('show');
+                    }
+                }
+            };
+            
+            // 音声認識が終了したときの処理
+            recognition.onend = async () => {
+                console.log('音声認識が終了しました');
+                
+                // 最終的な認識結果を取得して処理
+                const recognitionTextEl = document.getElementById('recognitionText');
+                const modal = document.getElementById('voiceRecognitionModal');
+                const text = recognitionTextEl ? recognitionTextEl.textContent.trim() : '';
+                
+                // モーダルを非表示
+                if (modal) {
+                    modal.classList.remove('show');
+                }
+                
+                document.getElementById('micButton').classList.remove('listening');
+                isListening = false;
+                
+                // テキストが取得できた場合のみ処理
+                if (text && text.length > 0 && text !== '話してください...') {
+                    await processRecognitionResult(text);
+                }
+            };
+            
+            // 音声認識結果を処理
+            async function processRecognitionResult(text) {
                 console.log('📝 認識結果:', text);
                 
                 try {
