@@ -267,26 +267,94 @@ function splitIntoFoodItems(text) {
             
             while (remaining.length > 0) {
                 let found = false;
+                let longestMatch = null;
+                let longestMatchLength = 0;
+                
+                // 最長一致を探す（長い食材名を優先）
                 for (const foodName of sortedFoodNamesForSplit) {
                     if (remaining.startsWith(foodName)) {
-                        foodItems.push(foodName);
-                        remaining = remaining.substring(foodName.length).trim();
-                        console.log(`✅ 食材名を発見: ${foodName}, 残り: ${remaining}`);
-                        found = true;
-                        break;
+                        if (foodName.length > longestMatchLength) {
+                            longestMatch = foodName;
+                            longestMatchLength = foodName.length;
+                            found = true;
+                        }
                     }
                 }
-                if (!found) {
-                    if (remaining.length > 0) {
-                        foodItems.push(remaining);
-                        console.log(`⚠️ 食材名辞書にないためそのまま追加: ${remaining}`);
+                
+                if (found && longestMatch) {
+                    foodItems.push(longestMatch);
+                    remaining = remaining.substring(longestMatch.length).trim();
+                    console.log(`✅ 食材名を発見: ${longestMatch}, 残り: "${remaining}"`);
+                    
+                    // 残りがない場合は終了
+                    if (remaining.length === 0) {
+                        break;
                     }
-                    break;
+                } else {
+                    // マッチする食材名が見つからない場合
+                    if (remaining.length > 0) {
+                        // 残りの文字列が短い場合（3文字以下）はそのまま追加
+                        if (remaining.length <= 3) {
+                            foodItems.push(remaining);
+                            console.log(`⚠️ 短い文字列をそのまま追加: ${remaining}`);
+                            break;
+                        } else {
+                            // 長い場合は、残りの一部が食材名の可能性があるので確認
+                            // 先頭から食材名の一部がマッチするか確認
+                            let partialMatch = false;
+                            for (const foodName of sortedFoodNamesForSplit) {
+                                // 残りの先頭が食材名の先頭と一致する場合
+                                if (foodName.startsWith(remaining.substring(0, Math.min(remaining.length, foodName.length)))) {
+                                    partialMatch = true;
+                                    break;
+                                }
+                            }
+                            
+                            if (!partialMatch) {
+                                // 部分一致もない場合、そのまま追加
+                                foodItems.push(remaining);
+                                console.log(`⚠️ 食材名辞書にないためそのまま追加: ${remaining}`);
+                                break;
+                            } else {
+                                // 部分一致がある場合は、残りを次の食材として扱う
+                                // ただし、無限ループを避けるため、1文字ずつ削って再試行
+                                let triedChars = 0;
+                                let charFound = false;
+                                while (triedChars < remaining.length && triedChars < 5) {
+                                    const partial = remaining.substring(0, remaining.length - triedChars);
+                                    for (const foodName of sortedFoodNamesForSplit) {
+                                        if (foodName.includes(partial) || partial.includes(foodName.substring(0, Math.min(partial.length, foodName.length)))) {
+                                            // 次のループで再試行するために残す
+                                            charFound = true;
+                                            break;
+                                        }
+                                    }
+                                    if (charFound) break;
+                                    triedChars++;
+                                }
+                                
+                                if (!charFound) {
+                                    foodItems.push(remaining);
+                                    console.log(`⚠️ 食材名辞書にないためそのまま追加: ${remaining}`);
+                                    break;
+                                } else {
+                                    // 次のループで再試行
+                                    continue;
+                                }
+                            }
+                        }
+                    } else {
+                        break;
+                    }
                 }
             }
             
             if (foodItems.length > 1) {
                 console.log('✅ 食材名辞書による分割成功:', foodItems);
+                parts = foodItems;
+            } else if (foodItems.length === 1 && foodItems[0] !== singlePart) {
+                // 1つしか見つからなかったが、元の文字列と違う場合は使用
+                console.log('📌 食材名辞書で1つだけ見つかった:', foodItems);
                 parts = foodItems;
             }
         }
