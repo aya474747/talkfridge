@@ -268,8 +268,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- PWA用スクリプト -->
-    <script src="indexdb-store.js"></script>
-    <script src="parse-utils.js"></script>
+    <script src="./indexdb-store.js"></script>
+    <script src="./parse-utils.js"></script>
     <!-- Gemini API (CDN) -->
     <script src="https://cdn.jsdelivr.net/npm/@google/generative-ai@0.21.0/dist/index.umd.js"></script>
     <script>
@@ -729,9 +729,31 @@
             }
         }
 
-        // ページ読み込み時
-        document.addEventListener('DOMContentLoaded', function() {
-            loadIngredients();
+        // ページ読み込み時（すべてのリソースが読み込まれるまで待つ）
+        window.addEventListener('load', function() {
+            // indexdb-store.jsが読み込まれているか確認
+            if (typeof getIngredients === 'function' && typeof addIngredients === 'function') {
+                loadIngredients();
+            } else {
+                console.error('❌ indexdb-store.jsが読み込まれていません');
+                // リトライ
+                setTimeout(() => {
+                    if (typeof getIngredients === 'function' && typeof addIngredients === 'function') {
+                        loadIngredients();
+                    } else {
+                        const container = document.getElementById('ingredients-container');
+                        if (container) {
+                            container.innerHTML = `
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle"></i> 
+                                    JavaScriptファイルの読み込みに失敗しました。ページをリロードしてください。
+                                </div>
+                            `;
+                        }
+                    }
+                }, 500);
+            }
+            
             loadQuota();
             setInterval(loadQuota, 30000);
         });
