@@ -371,6 +371,9 @@
             <span class="recording-text">🎤 音声認識中...</span>
         </div>
         <div id="recognitionText" class="recognition-text">話してください...</div>
+        <div class="recognition-hint" style="margin-top: 10px; font-size: 0.85em; color: #888; text-align: center;">
+            ヒント: 食材名の間に「、」や「と」を入れると正確に分割されます
+        </div>
     </div>
 
     <!-- マイクボタン -->
@@ -474,6 +477,90 @@
             recognition.continuous = false;
             recognition.interimResults = true; // 中間結果も取得
             
+            // 認識テキストに区切り点を追加する関数
+            function addSeparatorsToText(text) {
+                if (!text || text.length === 0) return text;
+                
+                // 食材名辞書を使って区切りを見つける
+                // COMMON_FOOD_NAMESはparse-utils.jsで定義されている
+                // グローバルスコープから取得できるか確認
+                const foodNames = typeof COMMON_FOOD_NAMES !== 'undefined' ? COMMON_FOOD_NAMES : [];
+                if (foodNames.length === 0) {
+                    // parse-utils.jsから直接取得できない場合は簡易版を使用
+                    const commonFoods = [
+                        'お刺身', '刺身', 'バター', 'キャベツ', 'トースト', '車海老', 'イカ', 'マグロ', 'サーモン', '卵',
+                        '鶏肉', '牛肉', '豚肉', '牛乳', 'チーズ', 'トマト', 'にんじん', '玉ねぎ', 'キャベツ'
+                    ];
+                    
+                    let result = text;
+                    let lastIndex = 0;
+                    const separators = [];
+                    
+                    // 長い食材名から順に検索
+                    const sortedFoods = [...commonFoods].sort((a, b) => b.length - a.length);
+                    
+                    for (const foodName of sortedFoods) {
+                        let searchIndex = 0;
+                        while (true) {
+                            const index = result.indexOf(foodName, searchIndex);
+                            if (index === -1) break;
+                            
+                            // 食材名の後に区切りを追加（既に区切り文字やスペースがない場合）
+                            const afterIndex = index + foodName.length;
+                            if (afterIndex < result.length) {
+                                const afterChar = result[afterIndex];
+                                // 区切り文字、スペース、日本語文字のチェック
+                                if (!/[、，と・\s　]/.test(afterChar) && /[あ-んア-ン一-龯]/.test(afterChar)) {
+                                    // 日本語文字が続く場合は区切りを追加
+                                    separators.push({ position: afterIndex, type: '・' });
+                                }
+                            }
+                            searchIndex = index + 1;
+                        }
+                    }
+                    
+                    // 後ろから前に向かって区切りを挿入（インデックスがずれないように）
+                    separators.sort((a, b) => b.position - a.position);
+                    for (const sep of separators) {
+                        result = result.substring(0, sep.position) + sep.type + result.substring(sep.position);
+                    }
+                    
+                    return result;
+                }
+                
+                // parse-utils.jsの食材名辞書を使用
+                let result = text;
+                const sortedFoodNames = [...foodNames].sort((a, b) => b.length - a.length);
+                const separators = [];
+                
+                // 各食材名を検索
+                for (const foodName of sortedFoodNames) {
+                    let searchIndex = 0;
+                    while (true) {
+                        const index = result.indexOf(foodName, searchIndex);
+                        if (index === -1) break;
+                        
+                        const afterIndex = index + foodName.length;
+                        if (afterIndex < result.length) {
+                            const afterChar = result[afterIndex];
+                            // 区切り文字やスペースがない場合、日本語文字が続く場合は区切りを追加
+                            if (!/[、，と・\s　]/.test(afterChar) && /[あ-んア-ン一-龯]/.test(afterChar)) {
+                                separators.push({ position: afterIndex, type: '・' });
+                            }
+                        }
+                        searchIndex = index + 1;
+                    }
+                }
+                
+                // 後ろから前に向かって区切りを挿入
+                separators.sort((a, b) => b.position - a.position);
+                for (const sep of separators) {
+                    result = result.substring(0, sep.position) + sep.type + result.substring(sep.position);
+                }
+                
+                return result;
+            }
+            
             // リアルタイム音声認識結果の表示
             recognition.onresult = (event) => {
                 let interimTranscript = '';
@@ -494,12 +581,20 @@
                 const modal = document.getElementById('voiceRecognitionModal');
                 
                 if (recognitionTextEl && modal) {
+                    let displayText = '';
+                    let isFinal = false;
+                    
                     if (finalTranscript) {
-                        recognitionTextEl.textContent = finalTranscript;
-                        recognitionTextEl.className = 'recognition-text final';
+                        displayText = addSeparatorsToText(finalTranscript);
+                        isFinal = true;
                     } else if (interimTranscript) {
-                        recognitionTextEl.textContent = interimTranscript;
-                        recognitionTextEl.className = 'recognition-text interim';
+                        displayText = addSeparatorsToText(interimTranscript);
+                        isFinal = false;
+                    }
+                    
+                    if (displayText) {
+                        recognitionTextEl.textContent = displayText;
+                        recognitionTextEl.className = isFinal ? 'recognition-text final' : 'recognition-text interim';
                     }
                     
                     // モーダルを表示
