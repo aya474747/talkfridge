@@ -336,14 +336,21 @@
                     console.log('📝 デバッグ情報:', parseData.debug);
                     
                     if (parseData.success && parseData.ingredients.length > 0) {
+                        // addIngredients関数が読み込まれているか確認
+                        if (typeof addIngredients !== 'function') {
+                            console.error('❌ addIngredients関数が読み込まれていません');
+                            alert('❌ エラー: アプリの初期化に失敗しました。ページをリロードしてください。');
+                            return;
+                        }
+                        
                         // IndexedDBに保存
                         const addResult = await addIngredients(parseData.ingredients);
                         
-                        if (addResult.success) {
+                        if (addResult && addResult.success) {
                             alert('✅ 食材を追加しました！');
                             loadIngredients();
                         } else {
-                            alert('❌ エラー: ' + (addResult.error || '不明なエラー'));
+                            alert('❌ エラー: ' + (addResult?.error || '不明なエラー'));
                         }
                     } else {
                         console.error('❌ 抽出できなかった食材:', parseData.debug);
@@ -351,7 +358,8 @@
                     }
                 } catch (error) {
                     console.error('エラー:', error);
-                    alert('❌ エラーが発生しました: ' + error.message);
+                    console.error('エラースタック:', error.stack);
+                    alert('❌ エラーが発生しました: ' + error.message + '\n\n詳細: ' + error.toString());
                 }
                 
                 document.getElementById('micButton').classList.remove('listening');
@@ -449,14 +457,21 @@
                 const parseData = parseIngredients(text);
                 
                 if (parseData.success && parseData.ingredients.length > 0) {
+                    // addIngredients関数が読み込まれているか確認
+                    if (typeof addIngredients !== 'function') {
+                        console.error('❌ addIngredients関数が読み込まれていません');
+                        alert('❌ エラー: アプリの初期化に失敗しました。ページをリロードしてください。');
+                        return;
+                    }
+                    
                     // IndexedDBに保存
                     const addResult = await addIngredients(parseData.ingredients);
                     
-                    if (addResult.success) {
+                    if (addResult && addResult.success) {
                         alert('✅ 食材を追加しました！');
                         loadIngredients();
                     } else {
-                        alert('❌ エラー: ' + (addResult.error || '不明なエラー'));
+                        alert('❌ エラー: ' + (addResult?.error || '不明なエラー'));
                     }
                 } else {
                     alert(`⚠️ 食材情報を抽出できませんでした。\n入力されたテキスト: "${text}"\nこの形式で入力してください: "鶏肉2枚、トマト3個"`);
