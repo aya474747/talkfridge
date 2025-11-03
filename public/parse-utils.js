@@ -303,40 +303,43 @@ function splitIntoFoodItems(text) {
             let remaining = singlePart;
             
             const sortedFoodNamesForSplit = [...COMMON_FOOD_NAMES].sort((a, b) => b.length - a.length);
-            
-            // 接頭辞をチェック（「お刺身」など）
-            const prefixes = ['お', 'ご'];
-            let processedPrefix = false;
-            for (const prefix of prefixes) {
-                if (remaining.startsWith(prefix)) {
-                    // 接頭辞の後の部分をチェック
-                    const withoutPrefix = remaining.substring(prefix.length);
-                    for (const foodName of sortedFoodNamesForSplit) {
-                        if (withoutPrefix.startsWith(foodName)) {
-                            // 接頭辞 + 食材名として追加
-                            foodItems.push(prefix + foodName);
-                            remaining = remaining.substring(prefix.length + foodName.length).trim();
-                            console.log(`✅ 食材名を発見（接頭辞付き）: ${prefix}${foodName}, 残り: "${remaining}"`);
-                            processedPrefix = true;
-                            break;
-                        }
-                    }
-                    if (processedPrefix) break;
-                }
-            }
+            const prefixes = ['お', 'ご']; // 接頭辞
             
             while (remaining.length > 0) {
                 let found = false;
                 let longestMatch = null;
                 let longestMatchLength = 0;
+                let matchedWithPrefix = false;
                 
-                // 最長一致を探す（長い食材名を優先）
-                for (const foodName of sortedFoodNamesForSplit) {
-                    if (remaining.startsWith(foodName)) {
-                        if (foodName.length > longestMatchLength) {
-                            longestMatch = foodName;
-                            longestMatchLength = foodName.length;
-                            found = true;
+                // まず接頭辞付きでチェック（「お刺身」など）
+                for (const prefix of prefixes) {
+                    if (remaining.startsWith(prefix)) {
+                        const withoutPrefix = remaining.substring(prefix.length);
+                        for (const foodName of sortedFoodNamesForSplit) {
+                            if (withoutPrefix.startsWith(foodName)) {
+                                const fullName = prefix + foodName;
+                                if (fullName.length > longestMatchLength) {
+                                    longestMatch = fullName;
+                                    longestMatchLength = fullName.length;
+                                    matchedWithPrefix = true;
+                                    found = true;
+                                }
+                            }
+                        }
+                        if (found && matchedWithPrefix) break;
+                    }
+                }
+                
+                // 接頭辞付きで見つからなかった場合、通常の食材名をチェック
+                if (!found || !matchedWithPrefix) {
+                    for (const foodName of sortedFoodNamesForSplit) {
+                        if (remaining.startsWith(foodName)) {
+                            if (foodName.length > longestMatchLength) {
+                                longestMatch = foodName;
+                                longestMatchLength = foodName.length;
+                                found = true;
+                                matchedWithPrefix = false;
+                            }
                         }
                     }
                 }
@@ -344,7 +347,7 @@ function splitIntoFoodItems(text) {
                 if (found && longestMatch) {
                     foodItems.push(longestMatch);
                     remaining = remaining.substring(longestMatch.length).trim();
-                    console.log(`✅ 食材名を発見: ${longestMatch}, 残り: "${remaining}"`);
+                    console.log(`✅ 食材名を発見${matchedWithPrefix ? '（接頭辞付き）' : ''}: ${longestMatch}, 残り: "${remaining}"`);
                     
                     // 残りがない場合は終了
                     if (remaining.length === 0) {
