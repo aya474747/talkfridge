@@ -32,7 +32,7 @@
         .header {
             background: linear-gradient(135deg, #CCCCCC 0%, #D8D8D8 100%);
             color: #333;
-            padding: 25px;
+            padding: 9px 25px 0 25px;
             border-radius: 15px 15px 0 0;
             text-align: center;
             position: relative;
@@ -45,8 +45,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 10px;
+            gap: 0px;
         }
         .eyes-container {
             display: flex;
@@ -61,17 +60,17 @@
         .eye {
             width: 40px;
             height: 40px;
-            background: white;
+            /* background: #d6d6d6; */
             border-radius: 50%;
             position: relative;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); */
         }
         .eye .pupil {
             position: absolute;
             top: 10px;
             left: 13px;
-            width: 10px;
-            height: 10px;
+            width: 15px;
+            height: 15px;
             background: #333;
             border-radius: 50%;
         }
@@ -81,19 +80,20 @@
             background: #FF6B6B;
             border-radius: 30px 30px 0 0;
             transform: rotate(180deg);
+            margin-top: 9px;
         }
         .app-title {
             font-size: 0.9em;
             color: #666;
             opacity: 0.9;
-            margin-top: 4px;
+            margin-top: -33px;
         }
         
         .ingredient-card {
             background: #FEFEFE;
             border-radius: 4px;
             margin: 4px 0;
-            padding: 10px 12px;
+            padding: 0px 15px;
             transition: all 0.2s ease;
             border: 1px solid #E0E0E0;
         }
@@ -103,7 +103,7 @@
             border-color: #C0C0C0;
         }
         .ingredient-name {
-            font-size: 1.2em;
+            font-size: 1.0em;
             font-weight: 600;
             color: #333;
             font-family: 'Inter', sans-serif;

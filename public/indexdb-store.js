@@ -74,33 +74,80 @@ async function getIngredients() {
     });
 }
 
-// 食材を追加
+// 食材を追加（既存の食材がある場合は数量を増やす）
 async function addIngredient(ingredient) {
     if (!db) await initDB();
     
+    const now = new Date().toISOString();
+    const data = {
+        name: ingredient.name,
+        quantity: ingredient.quantity || 1,
+        unit: ingredient.unit || '個',
+        category: ingredient.category || 'その他',
+        expiry_date: ingredient.expiry_date || null,
+        notes: ingredient.notes || null,
+        created_at: now,
+        updated_at: now
+    };
+    
+    // 既存の食材を検索（名前・単位・カテゴリが一致するもの）
     return new Promise((resolve, reject) => {
         const transaction = db.transaction([STORE_INGREDIENTS], 'readwrite');
         const store = transaction.objectStore(STORE_INGREDIENTS);
+        const request = store.getAll();
         
-        const now = new Date().toISOString();
-        const data = {
-            name: ingredient.name,
-            quantity: ingredient.quantity || 1,
-            unit: ingredient.unit || '個',
-            category: ingredient.category || 'その他',
-            expiry_date: ingredient.expiry_date || null,
-            notes: ingredient.notes || null,
-            created_at: now,
-            updated_at: now
+        request.onsuccess = async () => {
+            const existingIngredients = request.result.filter(ing => 
+                ing.name === data.name && 
+                ing.unit === data.unit && 
+                ing.category === data.category &&
+                ing.quantity > 0  // 数量が0以上（使用済みでない）
+            );
+            
+            if (existingIngredients.length > 0) {
+                // 既存の食材が見つかった場合：数量を増やす
+                const existing = existingIngredients[0];  // 最初に見つかった食材を使用
+                const newQuantity = existing.quantity + data.quantity;
+                
+                console.log(`📝 既存食材を発見: ${existing.name} (現在: ${existing.quantity}${existing.unit})`);
+                console.log(`➕ 数量を追加: ${data.quantity}${data.unit} → 合計: ${newQuantity}${data.unit}`);
+                
+                // 数量を更新
+                const updateResult = await updateIngredient(existing.id, { 
+                    quantity: newQuantity,
+                    updated_at: now
+                });
+                
+                if (updateResult.success) {
+                    // 使用履歴に記録
+                    try {
+                        await addUsageHistory(data.name, 'add', data.quantity);
+                    } catch (historyError) {
+                        console.warn('使用履歴の記録でエラー:', historyError);
+                    }
+                    resolve({ success: true });
+                } else {
+                    reject(new Error('食材の更新に失敗しました'));
+                }
+            } else {
+                // 既存の食材がない場合：新規追加
+                console.log(`➕ 新規食材を追加: ${data.name} ${data.quantity}${data.unit}`);
+                
+                const addRequest = store.add(data);
+                
+                addRequest.onsuccess = () => {
+                    // 使用履歴に記録
+                    try {
+                        addUsageHistory(data.name, 'add', data.quantity);
+                    } catch (historyError) {
+                        console.warn('使用履歴の記録でエラー:', historyError);
+                    }
+                    resolve({ success: true });
+                };
+                addRequest.onerror = () => reject(addRequest.error);
+            }
         };
         
-        const request = store.add(data);
-        
-        request.onsuccess = () => {
-            // 使用履歴に記録
-            addUsageHistory(data.name, 'add', data.quantity);
-            resolve({ success: true });
-        };
         request.onerror = () => reject(request.error);
     });
 }
