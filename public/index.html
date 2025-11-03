@@ -611,7 +611,10 @@
                 // 最終的な認識結果を取得して処理
                 const recognitionTextEl = document.getElementById('recognitionText');
                 const modal = document.getElementById('voiceRecognitionModal');
-                const text = recognitionTextEl ? recognitionTextEl.textContent.trim() : '';
+                // 区切り点を除去して元のテキストを取得（区切り点は表示用のみ）
+                let text = recognitionTextEl ? recognitionTextEl.textContent.trim() : '';
+                // 区切り点（・）を除去
+                text = text.replace(/・/g, '');
                 
                 // モーダルを非表示
                 if (modal) {
