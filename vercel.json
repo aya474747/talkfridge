@@ -1,7 +1,7 @@
 {
   "version": 2,
   "framework": null,
-  "buildCommand": "echo 'Static site - no build needed'",
+  "buildCommand": "node update-commit-info.js",
   "outputDirectory": "public",
   "rewrites": [
     {
