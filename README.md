@@ -94,23 +94,51 @@ http://localhost:5001
 
 ## ⚠️ トラブルシューティング
 
-### エラー: Gemini API is not configured
+詳細なトラブルシューティングガイドは [`TROUBLESHOOTING.md`](./TROUBLESHOOTING.md) を参照してください。
 
-`.env` ファイルに Gemini API キーを設定してください。
+### よくある問題
 
-### 音声認識が動かない
+#### エラー: `Can't find variable: addIngredients`
+**原因**: JavaScriptファイルが読み込まれる前に実行されている
 
-- Chrome ブラウザを使用してください
+**解決方法**:
+- `window.addEventListener('load')`を使用して、全てのリソースが読み込まれるまで待つ
+- 関数の存在確認を追加（`typeof addIngredients === 'function'`）
+
+#### エラー: IndexedDBのVersionError
+**原因**: IndexedDBのバージョンが既存DBより低い
+
+**解決方法**:
+- `DB_VERSION`を既存DBのバージョン以上に上げる
+- `onupgradeneeded`でバージョンアップ処理を実装
+
+#### 音声認識が動かない
+
+- Chrome ブラウザを使用してください（PC）
+- iPhoneの場合はSafariを使用するか、iOSキーボードの音声入力を使用
 - マイクの権限を許可してください
 
-### ポートが既に使われている
+#### Vercelデプロイ時のエラー
 
-```bash
-PORT=5002 python oshaberi_web_app.py
-```
+- `vercel.json`の設定を確認（`outputDirectory`が`public`になっているか）
+- ファイルパスは`./`で明示的に指定
+- ビルドコマンドが正しく設定されているか確認
 
 ---
 
-## 📄 詳細
+## 📄 詳細ドキュメント
 
-詳しい使い方は `README_OSHABERI.md` を参照してください。
+- **詳しい使い方**: [`README_OSHABERI.md`](./README_OSHABERI.md)
+- **トラブルシューティング**: [`TROUBLESHOOTING.md`](./TROUBLESHOOTING.md)
+- **開発メモ**: [`DEVELOPMENT_NOTES.md`](./DEVELOPMENT_NOTES.md)
+
+---
+
+## 🔧 PWA版について
+
+現在の本番環境は**PWA版**（`public/`ディレクトリ）を使用しています。
+
+- **デプロイ先**: Vercel
+- **URL**: https://talkfridge.vercel.app
+- **データ保存**: IndexedDB（ブラウザのローカルストレージ）
+- **音声入力**: Web Speech API（iOSのChromeではiOSキーボードの音声入力を使用）
