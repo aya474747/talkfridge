@@ -43,7 +43,7 @@ const CATEGORY_KEYWORDS = {
     '乳製品': ['牛乳', 'ぎゅうにゅう', 'ミルク', 'チーズ', 'バター', 'ヨーグルト', '生クリーム', 'クリーム', 'マーガリン', 'アイス', 'アイスクリーム'],
     '野菜': ['トマト', 'きゅうり', 'にんじん', '人参', 'たまねぎ', '玉ねぎ', 'キャベツ', 'レタス', 'ほうれん草', 'ほうれんそう', '大根', 'かぼちゃ', 'ピーマン', 'なす', 'ナス', 'ブロッコリー', '白菜', 'もやし', 'じゃがいも', 'ジャガイモ', 'ゴボウ', 'ごぼう', 'レンコン', 'れんこん', 'さつまいも', 'サツマイモ'],
     'きのこ': ['しいたけ', 'まいたけ', 'えのき', 'しめじ', 'きのこ', 'マッシュルーム'],
-    '穀物': ['米', 'ご飯', 'パン', 'パスタ', 'うどん', 'そば', 'ラーメン', '小麦粉', 'お好み焼き粉'],
+    '穀物': ['米', 'ご飯', 'パン', 'パスタ', 'うどん', 'そば', 'ラーメン', '小麦粉', 'お好み焼き粉', 'トースト', '食パン'],
     '調味料': ['醤油', '味噌', '塩', '砂糖', 'こしょう', '胡椒', '油', 'サラダ油', 'オリーブオイル', '酢', 'みりん'],
     '加工食品': ['豆腐', '納豆', 'こんにゃく', 'しらたき', 'わかめ', 'のり', '海苔', 'かつお節', 'だし', 'インスタント', 'カップ麺', 'レトルト'],
     'その他': []
@@ -128,6 +128,10 @@ const COMMON_FOOD_DICT = {
     '鯖': 'その他',
     'あじ': 'その他',
     '鯵': 'その他',
+    '刺身': 'その他',
+    'お刺身': 'その他',
+    'さしみ': 'その他',
+    'サシミ': 'その他',
     '卵': 'その他',
     'たまご': 'その他',
     'タマゴ': 'その他',
@@ -141,6 +145,11 @@ const COMMON_FOOD_DICT = {
     'ヨーグルト': '乳製品',
     '生クリーム': '乳製品',
     'クリーム': '乳製品',
+    
+    // パン・穀物類
+    'トースト': '穀物',
+    '食パン': '穀物',
+    'パン': '穀物',
     
     // その他
     '豆腐': '加工食品',
@@ -294,6 +303,27 @@ function splitIntoFoodItems(text) {
             let remaining = singlePart;
             
             const sortedFoodNamesForSplit = [...COMMON_FOOD_NAMES].sort((a, b) => b.length - a.length);
+            
+            // 接頭辞をチェック（「お刺身」など）
+            const prefixes = ['お', 'ご'];
+            let processedPrefix = false;
+            for (const prefix of prefixes) {
+                if (remaining.startsWith(prefix)) {
+                    // 接頭辞の後の部分をチェック
+                    const withoutPrefix = remaining.substring(prefix.length);
+                    for (const foodName of sortedFoodNamesForSplit) {
+                        if (withoutPrefix.startsWith(foodName)) {
+                            // 接頭辞 + 食材名として追加
+                            foodItems.push(prefix + foodName);
+                            remaining = remaining.substring(prefix.length + foodName.length).trim();
+                            console.log(`✅ 食材名を発見（接頭辞付き）: ${prefix}${foodName}, 残り: "${remaining}"`);
+                            processedPrefix = true;
+                            break;
+                        }
+                    }
+                    if (processedPrefix) break;
+                }
+            }
             
             while (remaining.length > 0) {
                 let found = false;
