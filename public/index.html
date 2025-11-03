@@ -601,11 +601,7 @@
                 }
             };
             
-            recognition.onend = () => {
-                console.log('音声認識が終了しました');
-                document.getElementById('micButton').classList.remove('listening');
-                isListening = false;
-            };
+            // onendは上記で処理済み
             
             return recognition;
         }
