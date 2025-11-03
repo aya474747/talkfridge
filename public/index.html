@@ -198,6 +198,9 @@
                     <span class="app-title">TalkFridge</span>
                     <div class="mouth"></div>
                 </div>
+                <div id="commit-info" style="margin-top: 8px; font-size: 0.7em; color: #888; opacity: 0.8; text-align: center;">
+                    <span id="commit-hash">b870ec8</span> - <span id="commit-message">Fix: 音声入力エラーハンドリングを強化（addIngredients関数の存在確認を追加）</span>
+                </div>
             </div>
 
             <!-- メインコンテンツ -->
@@ -744,8 +747,31 @@
             }
         }
 
+        // コミット情報を更新（デプロイ時に自動更新）
+        function updateCommitInfo() {
+            // Gitのコミット情報を取得（ビルド時に埋め込まれる）
+            const commitInfo = {
+                hash: 'b870ec8',
+                message: 'Fix: 音声入力エラーハンドリングを強化（addIngredients関数の存在確認を追加）',
+                date: '2025-11-03'
+            };
+            
+            const commitHashEl = document.getElementById('commit-hash');
+            const commitMessageEl = document.getElementById('commit-message');
+            
+            if (commitHashEl) {
+                commitHashEl.textContent = commitInfo.hash;
+            }
+            if (commitMessageEl) {
+                commitMessageEl.textContent = commitInfo.message;
+            }
+        }
+
         // ページ読み込み時（すべてのリソースが読み込まれるまで待つ）
         window.addEventListener('load', function() {
+            // コミット情報を更新
+            updateCommitInfo();
+            
             // indexdb-store.jsが読み込まれているか確認
             if (typeof getIngredients === 'function' && typeof addIngredients === 'function') {
                 loadIngredients();
