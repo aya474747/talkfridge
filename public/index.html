@@ -28,6 +28,7 @@
             margin: 20px auto;
             max-width: 600px;
             border: 1px solid #D0D0D0;
+            padding-bottom: 120px; /* マイクボタンとトースト通知の分のスペースを確保 */
         }
         .header {
             background: linear-gradient(135deg, #CCCCCC 0%, #D8D8D8 100%);
@@ -329,7 +330,7 @@
                     <!-- 食材一覧 -->
                     <div id="ingredients" class="tab-pane active">
                         <h4 class="mb-3">ぼくのお腹</h4>
-                        <div id="ingredients-container">
+                        <div id="ingredients-container" style="padding-bottom: 20px;">
                             <div class="text-center py-5">
                                 <i class="fas fa-spinner fa-spin fa-3x mb-3"></i>
                                 <p>読み込み中...</p>
