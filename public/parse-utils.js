@@ -162,6 +162,10 @@ const COMMON_FOOD_DICT = {
 
 // よくある食材名リスト（後方互換性のため）
 const COMMON_FOOD_NAMES = Object.keys(COMMON_FOOD_DICT);
+// グローバルスコープにも公開（リアルタイム表示用）
+if (typeof window !== 'undefined') {
+    window.COMMON_FOOD_NAMES = COMMON_FOOD_NAMES;
+}
 
 // 特別なマッチング（より具体的なキーワードを優先）
 const SPECIAL_MATCHES = {

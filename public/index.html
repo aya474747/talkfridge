@@ -483,8 +483,8 @@
                 
                 // 食材名辞書を使って区切りを見つける
                 // COMMON_FOOD_NAMESはparse-utils.jsで定義されている
-                // グローバルスコープから取得できるか確認
-                const foodNames = typeof COMMON_FOOD_NAMES !== 'undefined' ? COMMON_FOOD_NAMES : [];
+                // windowオブジェクト経由で取得
+                const foodNames = (typeof window !== 'undefined' && window.COMMON_FOOD_NAMES) ? window.COMMON_FOOD_NAMES : [];
                 if (foodNames.length === 0) {
                     // parse-utils.jsから直接取得できない場合は簡易版を使用
                     const commonFoods = [
